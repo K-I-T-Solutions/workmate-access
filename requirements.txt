@@ -1,2 +1,10 @@
 fastapi
 uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic_settings
+alembic
+psycopg2-binary          # PostgreSQL Treiber
+python-dotenv            # .env Support
+httpx                    # Für Zitadel API Calls
+python-multipart         # Form Data
