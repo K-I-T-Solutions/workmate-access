@@ -1,7 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ...db.database import get_db
-from ...schemas.access import AccessVerifyRequest, AccessVerifyResponse, AccessLogResponse
+from ...schemas.access import (
+    AccessVerifyRequest,
+    AccessVerifyResponse,
+    AccessLogResponse,
+    CardVerifyRequest,
+    CardVerifyResponse,
+)
 from ...services.access_service import AccessService
 from ...models import AccessLog
 
@@ -14,7 +20,7 @@ def verify_access(
 ):
     """
     Prüfe Zugang für einen User zu einem Room
-    
+
     Request Body:
 ```json
     {
@@ -26,6 +32,40 @@ def verify_access(
 ```
     """
     return AccessService.verify_access(db, request)
+
+
+@router.post("/verify-card", response_model=CardVerifyResponse)
+def verify_card(
+    request: CardVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verifiziere NFC-Karten Zugang (für ESP32 Geräte)
+
+    Sucht User anhand card_uid und prüft Raum-Berechtigung.
+    Alle Zugriffsversuche werden geloggt.
+
+    Request Body:
+```json
+    {
+        "card_uid": "74AFF106",
+        "device_id": "esp32_entrance_01",
+        "room_id": "office_main"
+    }
+```
+
+    Response:
+```json
+    {
+        "access": true,
+        "message": "Zugang gewährt",
+        "user_id": "KIT-0001",
+        "user_name": "Joshua",
+        "timestamp": "2025-02-05T14:30:00"
+    }
+```
+    """
+    return AccessService.verify_card_access(db, request)
 
 @router.get("/logs", response_model=list[AccessLogResponse])
 def get_access_logs(

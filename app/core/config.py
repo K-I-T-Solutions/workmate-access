@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # CORS
-    CORS_ORIGINS: str = '["http://localhost:3000","http://localhost:8000"]'
+    CORS_ORIGINS: str = '*'
 
     # Access Control
     DEFAULT_LOCK_TIMEOUT: int = 5

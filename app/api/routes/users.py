@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import Optional
 from ...db.database import get_db
 from ...models import User
 from pydantic import BaseModel
@@ -11,13 +12,20 @@ class UserCreate(BaseModel):
     zitadel_id: str
     username: str
     display_name: str
+    role: str = "user"
+
+class UserUpdate(BaseModel):
+    display_name: Optional[str] = None
+    role: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
     username: str
     display_name: str
+    role: str = "user"
+    zitadel_id: str
     is_active: bool
-    
+
     class Config:
         from_attributes = True
 
@@ -42,3 +50,25 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.patch("/{user_id}", response_model=UserResponse)
+def update_user(user_id: str, update: UserUpdate, db: Session = Depends(get_db)):
+    """Aktualisiere einen User"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    for field, value in update.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: str, db: Session = Depends(get_db)):
+    """Deaktiviere einen User"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_active = False
+    db.commit()
+    return None

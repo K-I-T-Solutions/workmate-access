@@ -21,6 +21,11 @@ class PermissionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+@router.get("/", response_model=list[PermissionResponse])
+def list_permissions(db: Session = Depends(get_db)):
+    """Liste alle aktiven Berechtigungen auf"""
+    return db.query(Permission).filter(Permission.is_active == True).all()
+
 @router.post("/", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
 def create_permission(perm: PermissionCreate, db: Session = Depends(get_db)):
     """Vergebe eine Permission (User zu Room)"""

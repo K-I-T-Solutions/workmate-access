@@ -1,9 +1,14 @@
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from .core.config import settings
 from .db.database import engine
 from .models import Base
-from .api.routes import access, rooms, users, permissions
+from .api.routes import access, rooms, users, permissions, nfc_chips
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -28,10 +33,13 @@ app.include_router(access.router)
 app.include_router(rooms.router)
 app.include_router(users.router)
 app.include_router(permissions.router)
+app.include_router(nfc_chips.router)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 def read_root():
-    return {"ok": True, "msg": "Workmate Access", "version": settings.VERSION}
+    return FileResponse(STATIC_DIR / "index.html")
 
 @app.get("/health")
 def health():

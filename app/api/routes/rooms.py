@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import Optional
 from ...db.database import get_db
 from ...models import Room
 from pydantic import BaseModel
@@ -9,15 +10,21 @@ router = APIRouter(prefix="/api/v1/rooms", tags=["rooms"])
 class RoomCreate(BaseModel):
     id: str
     name: str
-    description: str = None
-    zigbee_lock_id: str = None
+    description: Optional[str] = None
+    zigbee_lock_id: Optional[str] = None
+
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    zigbee_lock_id: Optional[str] = None
 
 class RoomResponse(BaseModel):
     id: str
     name: str
-    description: str = None
+    description: Optional[str] = None
+    zigbee_lock_id: Optional[str] = None
     is_active: bool
-    
+
     class Config:
         from_attributes = True
 
@@ -41,6 +48,18 @@ def get_room(room_id: str, db: Session = Depends(get_db)):
     room = db.query(Room).filter(Room.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
+    return room
+
+@router.patch("/{room_id}", response_model=RoomResponse)
+def update_room(room_id: str, update: RoomUpdate, db: Session = Depends(get_db)):
+    """Aktualisiere einen Raum"""
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    for field, value in update.model_dump(exclude_unset=True).items():
+        setattr(room, field, value)
+    db.commit()
+    db.refresh(room)
     return room
 
 @router.delete("/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
