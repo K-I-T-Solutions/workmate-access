@@ -13,3 +13,9 @@ dist/
 htmlcov/
 .DS_Store
 .env
+
+# PlatformIO
+.pio/
+
+# Firmware secrets
+firmware/include/secrets.h
