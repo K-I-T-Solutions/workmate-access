@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional
+import re
 
 class AccessVerifyRequest(BaseModel):
     user_id: str  # KIT-0001
@@ -34,6 +35,14 @@ class CardVerifyRequest(BaseModel):
     card_uid: str  # NFC Karten UID z.B. "74AFF106"
     device_id: str  # ESP32 Kennung z.B. "esp32_entrance_01"
     room_id: str  # Zielraum z.B. "office_main"
+
+    @field_validator("card_uid")
+    @classmethod
+    def validate_card_uid(cls, v: str) -> str:
+        v = v.strip().upper()
+        if not re.fullmatch(r"[0-9A-F]{8,14}", v):
+            raise ValueError("card_uid muss 8-14 Hex-Zeichen sein")
+        return v
 
 
 class CardVerifyResponse(BaseModel):

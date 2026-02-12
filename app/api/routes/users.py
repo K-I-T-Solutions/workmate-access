@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
 from ...db.database import get_db
-from ...models import User
+from ...models import User, NfcChip
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
@@ -70,5 +70,6 @@ def delete_user(user_id: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = False
+    db.query(NfcChip).filter(NfcChip.user_id == user_id).update({"is_active": False})
     db.commit()
     return None

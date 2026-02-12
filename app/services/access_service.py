@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
+from sqlalchemy import func
+from datetime import datetime, timedelta
 from ..models import User, Room, Permission, AccessLog, NfcChip
+from ..core.config import settings
 from ..schemas.access import (
     AccessVerifyRequest,
     AccessVerifyResponse,
@@ -79,11 +81,41 @@ class AccessService:
         )
 
     @staticmethod
+    def _is_locked_out(db: Session, card_uid: str) -> bool:
+        """
+        Prüfe ob eine card_uid wegen zu vieler Fehlversuche gesperrt ist.
+        Zählt fehlgeschlagene Versuche in den letzten LOCKOUT_DURATION Sekunden.
+        """
+        cutoff = datetime.utcnow() - timedelta(seconds=settings.LOCKOUT_DURATION)
+        failed_count = db.query(func.count(AccessLog.id)).filter(
+            AccessLog.nfc_chip_id == card_uid,
+            AccessLog.granted == False,
+            AccessLog.timestamp >= cutoff,
+        ).scalar()
+        return failed_count >= settings.MAX_FAILED_ATTEMPTS
+
+    @staticmethod
     def verify_card_access(db: Session, request: CardVerifyRequest) -> CardVerifyResponse:
         """
         Verifiziere Zugang anhand NFC Karten UID (für ESP32 Geräte)
         """
         timestamp = datetime.utcnow()
+
+        # Rate-Limiting: Lockout bei zu vielen Fehlversuchen
+        if AccessService._is_locked_out(db, request.card_uid):
+            AccessService._log_card_access(
+                db,
+                request=request,
+                user_id=None,
+                granted=False,
+                reason="Karte gesperrt (zu viele Fehlversuche)",
+                timestamp=timestamp,
+            )
+            return CardVerifyResponse(
+                access=False,
+                message="Karte gesperrt (zu viele Fehlversuche)",
+                timestamp=timestamp,
+            )
 
         # Chip anhand UID suchen, dann User laden
         chip = db.query(NfcChip).filter(
