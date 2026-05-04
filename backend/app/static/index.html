@@ -258,8 +258,8 @@
                     <input type="text" id="user-id" required>
                 </label>
                 <label>
-                    Zitadel-ID
-                    <input type="text" id="user-zitadel-id" required>
+                    Keycloak-ID
+                    <input type="text" id="user-keycloak-id" required>
                 </label>
                 <label>
                     Benutzername
@@ -494,7 +494,7 @@
         document.getElementById('user-edit-id').value = '';
         document.getElementById('user-dialog-title').textContent = 'Neuer Benutzer';
         document.getElementById('user-id').disabled = false;
-        document.getElementById('user-zitadel-id').disabled = false;
+        document.getElementById('user-keycloak-id').disabled = false;
         document.getElementById('user-username').disabled = false;
         dialog.showModal();
     }
@@ -505,8 +505,8 @@
         document.getElementById('user-edit-id').value = user.id;
         document.getElementById('user-id').value = user.id;
         document.getElementById('user-id').disabled = true;
-        document.getElementById('user-zitadel-id').value = user.zitadel_id;
-        document.getElementById('user-zitadel-id').disabled = true;
+        document.getElementById('user-keycloak-id').value = user.keycloak_id;
+        document.getElementById('user-keycloak-id').disabled = true;
         document.getElementById('user-username').value = user.username;
         document.getElementById('user-username').disabled = true;
         document.getElementById('user-display-name').value = user.display_name;
@@ -531,7 +531,7 @@
                     method: 'POST',
                     body: JSON.stringify({
                         id: document.getElementById('user-id').value,
-                        zitadel_id: document.getElementById('user-zitadel-id').value,
+                        keycloak_id: document.getElementById('user-keycloak-id').value,
                         username: document.getElementById('user-username').value,
                         display_name: document.getElementById('user-display-name').value,
                         role: document.getElementById('user-role').value,

@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 class UserCreate(BaseModel):
     id: str  # KIT-0001
-    zitadel_id: str
+    keycloak_id: str
     username: str
     display_name: str
     role: str = "user"
@@ -23,7 +23,7 @@ class UserResponse(BaseModel):
     username: str
     display_name: str
     role: str = "user"
-    zitadel_id: str
+    keycloak_id: str
     is_active: bool
 
     class Config:
