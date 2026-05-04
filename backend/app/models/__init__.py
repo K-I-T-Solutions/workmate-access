@@ -4,5 +4,6 @@ from .room import Room
 from .permission import Permission
 from .access_log import AccessLog
 from .nfc_chip import NfcChip
+from .otp_code import OtpCode
 
-__all__ = ["Base", "User", "Room", "Permission", "AccessLog", "NfcChip"]
+__all__ = ["Base", "User", "Room", "Permission", "AccessLog", "NfcChip", "OtpCode"]

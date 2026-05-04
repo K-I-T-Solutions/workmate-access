@@ -7,8 +7,13 @@ from ...schemas.access import (
     AccessLogResponse,
     CardVerifyRequest,
     CardVerifyResponse,
+    OtpSendRequest,
+    OtpSendResponse,
+    OtpVerifyRequest,
+    OtpVerifyResponse,
 )
 from ...services.access_service import AccessService
+from ...services.otp_service import OtpService
 from ...models import AccessLog
 
 router = APIRouter(prefix="/api/v1/access", tags=["access"])
@@ -98,3 +103,36 @@ def get_user_logs(
         .limit(limit)
         .all()
     )
+
+
+@router.post("/otp/send", response_model=OtpSendResponse)
+def send_otp(request: OtpSendRequest, db: Session = Depends(get_db)):
+    """
+    Sende einen 6-stelligen OTP per WhatsApp (bevorzugt) oder SMS.
+
+    Request Body:
+```json
+    {
+        "phone_number": "+4915712345678",
+        "room_id": "office_main"
+    }
+```
+    """
+    return OtpService.send_otp(db, request)
+
+
+@router.post("/otp/verify", response_model=OtpVerifyResponse)
+def verify_otp(request: OtpVerifyRequest, db: Session = Depends(get_db)):
+    """
+    Verifiziere OTP und gewähre temporären Zugang.
+
+    Request Body:
+```json
+    {
+        "phone_number": "+4915712345678",
+        "code": "123456",
+        "room_id": "office_main"
+    }
+```
+    """
+    return OtpService.verify_otp(db, request)

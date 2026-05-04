@@ -8,3 +8,4 @@ psycopg2-binary          # PostgreSQL Treiber
 python-dotenv            # .env Support
 httpx                    # Für Zitadel API Calls
 python-multipart         # Form Data
+sentdm                   # OTP via WhatsApp/SMS

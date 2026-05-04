@@ -52,3 +52,52 @@ class CardVerifyResponse(BaseModel):
     user_id: Optional[str] = None
     user_name: Optional[str] = None
     timestamp: datetime
+
+
+class OtpSendRequest(BaseModel):
+    phone_number: str  # E.164: +4915712345678
+    room_id: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v: str) -> str:
+        v = v.strip()
+        if not re.fullmatch(r"\+[1-9]\d{6,14}", v):
+            raise ValueError("phone_number muss im E.164-Format sein (z.B. +4915712345678)")
+        return v
+
+
+class OtpSendResponse(BaseModel):
+    success: bool
+    message: str
+    channel: str  # "whatsapp" oder "sms"
+
+
+class OtpVerifyRequest(BaseModel):
+    phone_number: str
+    code: str
+    room_id: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v: str) -> str:
+        v = v.strip()
+        if not re.fullmatch(r"\+[1-9]\d{6,14}", v):
+            raise ValueError("phone_number muss im E.164-Format sein (z.B. +4915712345678)")
+        return v
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        v = v.strip()
+        if not re.fullmatch(r"\d{6}", v):
+            raise ValueError("code muss genau 6 Ziffern haben")
+        return v
+
+
+class OtpVerifyResponse(BaseModel):
+    access: bool
+    message: str
+    user_id: Optional[str] = None
+    user_name: Optional[str] = None
+    timestamp: datetime
