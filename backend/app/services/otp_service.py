@@ -1,5 +1,8 @@
 import secrets
 import string
+import threading
+import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import sent_dm
@@ -16,6 +19,37 @@ from ..schemas.access import (
 )
 
 OTP_TTL_MINUTES = 5
+
+_verify_attempts: dict[str, list[float]] = defaultdict(list)
+_verify_lock = threading.Lock()
+
+
+def _check_send_rate_limit(db: Session, phone_number: str) -> None:
+    since = datetime.utcnow() - timedelta(hours=1)
+    count = (
+        db.query(OtpCode)
+        .filter(OtpCode.phone_number == phone_number, OtpCode.created_at >= since)
+        .count()
+    )
+    if count >= settings.OTP_SEND_MAX_PER_HOUR:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Zu viele OTP-Anfragen. Maximal {settings.OTP_SEND_MAX_PER_HOUR} pro Stunde erlaubt.",
+        )
+
+
+def _check_verify_rate_limit(phone_number: str) -> None:
+    now = time.monotonic()
+    window = settings.OTP_VERIFY_WINDOW_MINUTES * 60
+    with _verify_lock:
+        recent = [t for t in _verify_attempts[phone_number] if now - t < window]
+        if len(recent) >= settings.OTP_VERIFY_MAX_ATTEMPTS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Zu viele Versuche. Bitte {settings.OTP_VERIFY_WINDOW_MINUTES} Minuten warten.",
+            )
+        recent.append(now)
+        _verify_attempts[phone_number] = recent
 
 
 class OtpService:
@@ -63,6 +97,7 @@ class OtpService:
 
     @staticmethod
     def send_otp(db: Session, request: OtpSendRequest) -> OtpSendResponse:
+        _check_send_rate_limit(db, request.phone_number)
         client = OtpService._get_client()
         channel = OtpService._detect_channel(client, request.phone_number)
         code = OtpService._generate_code()
@@ -100,6 +135,7 @@ class OtpService:
 
     @staticmethod
     def verify_otp(db: Session, request: OtpVerifyRequest) -> OtpVerifyResponse:
+        _check_verify_rate_limit(request.phone_number)
         timestamp = datetime.utcnow()
 
         otp = db.query(OtpCode).filter(

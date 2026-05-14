@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     SENT_DM_OTP_TEMPLATE_ID: str = "otp"
     SENT_DM_SANDBOX: bool = False
 
+    # OTP Rate-Limiting
+    OTP_SEND_MAX_PER_HOUR: int = 5
+    OTP_VERIFY_MAX_ATTEMPTS: int = 10
+    OTP_VERIFY_WINDOW_MINUTES: int = 15
+
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
