@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from ...db.database import get_db
 from ...models import User, NfcChip
+from ...core.auth import TokenData, get_current_user, require_admin
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
@@ -30,7 +31,7 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+def create_user(user: UserCreate, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Erstelle einen neuen User"""
     db_user = User(**user.model_dump())
     db.add(db_user)
@@ -39,12 +40,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.get("/", response_model=list[UserResponse])
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
     """Liste alle Users auf"""
     return db.query(User).filter(User.is_active == True).all()
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: str, db: Session = Depends(get_db)):
+def get_user(user_id: str, db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
     """Hole einen spezifischen User"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -52,7 +53,7 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     return user
 
 @router.patch("/{user_id}", response_model=UserResponse)
-def update_user(user_id: str, update: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: str, update: UserUpdate, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Aktualisiere einen User"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -64,7 +65,7 @@ def update_user(user_id: str, update: UserUpdate, db: Session = Depends(get_db))
     return user
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: str, db: Session = Depends(get_db)):
+def delete_user(user_id: str, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Deaktiviere einen User"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

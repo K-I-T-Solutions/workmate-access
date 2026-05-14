@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ...db.database import get_db
+from ...core.auth import TokenData, require_admin
 from ...schemas.access import (
     AccessVerifyRequest,
     AccessVerifyResponse,
@@ -77,7 +78,8 @@ def get_access_logs(
     user_id: str = None,
     room_id: str = None,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: TokenData = Depends(require_admin),
 ):
     """Hole Access Logs (optional gefiltert)"""
     query = db.query(AccessLog)
@@ -93,7 +95,8 @@ def get_access_logs(
 def get_user_logs(
     user_id: str,
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: TokenData = Depends(require_admin),
 ):
     """Hole alle Access Logs für einen spezifischen User"""
     return (

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ...db.database import get_db
 from ...models import Permission, User, Room
+from ...core.auth import TokenData, require_admin
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/permissions", tags=["permissions"])
@@ -22,12 +23,12 @@ class PermissionResponse(BaseModel):
         from_attributes = True
 
 @router.get("/", response_model=list[PermissionResponse])
-def list_permissions(db: Session = Depends(get_db)):
+def list_permissions(db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Liste alle aktiven Berechtigungen auf"""
     return db.query(Permission).filter(Permission.is_active == True).all()
 
 @router.post("/", response_model=PermissionResponse, status_code=status.HTTP_201_CREATED)
-def create_permission(perm: PermissionCreate, db: Session = Depends(get_db)):
+def create_permission(perm: PermissionCreate, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Vergebe eine Permission (User zu Room)"""
     # Prüfe ob User und Room existieren
     user = db.query(User).filter(User.id == perm.user_id).first()
@@ -43,7 +44,7 @@ def create_permission(perm: PermissionCreate, db: Session = Depends(get_db)):
     return db_perm
 
 @router.get("/{user_id}", response_model=list[PermissionResponse])
-def get_user_permissions(user_id: str, db: Session = Depends(get_db)):
+def get_user_permissions(user_id: str, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Hole alle Permissions für einen User"""
     return db.query(Permission).filter(
         Permission.user_id == user_id,
@@ -51,7 +52,7 @@ def get_user_permissions(user_id: str, db: Session = Depends(get_db)):
     ).all()
 
 @router.delete("/{permission_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_permission(permission_id: int, db: Session = Depends(get_db)):
+def delete_permission(permission_id: int, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Lösche eine Permission"""
     perm = db.query(Permission).filter(Permission.id == permission_id).first()
     if not perm:

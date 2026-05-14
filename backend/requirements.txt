@@ -9,3 +9,4 @@ python-dotenv            # .env Support
 httpx                    # Für Zitadel API Calls
 python-multipart         # Form Data
 sentdm                   # OTP via WhatsApp/SMS
+python-jose[cryptography] # JWT-Verifikation für Keycloak

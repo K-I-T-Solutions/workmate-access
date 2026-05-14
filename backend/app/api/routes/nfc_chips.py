@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from ...db.database import get_db
 from ...models import NfcChip, User
+from ...core.auth import TokenData, require_admin
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 import re
@@ -36,7 +37,7 @@ class NfcChipResponse(BaseModel):
 
 
 @router.get("/{user_id}/chips", response_model=list[NfcChipResponse])
-def list_user_chips(user_id: str, db: Session = Depends(get_db)):
+def list_user_chips(user_id: str, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Liste alle NFC Chips eines Users auf"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -48,7 +49,7 @@ def list_user_chips(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{user_id}/chips", response_model=NfcChipResponse, status_code=status.HTTP_201_CREATED)
-def add_chip(user_id: str, chip: NfcChipCreate, db: Session = Depends(get_db)):
+def add_chip(user_id: str, chip: NfcChipCreate, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Füge einem User einen NFC Chip hinzu"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -74,7 +75,7 @@ def add_chip(user_id: str, chip: NfcChipCreate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{user_id}/chips/{chip_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_chip(user_id: str, chip_id: int, db: Session = Depends(get_db)):
+def remove_chip(user_id: str, chip_id: int, db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
     """Deaktiviere einen NFC Chip"""
     chip = db.query(NfcChip).filter(
         NfcChip.id == chip_id,
