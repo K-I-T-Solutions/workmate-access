@@ -19,8 +19,8 @@
     </script>
     <style>
         [x-cloak] { display: none; }
-        .sidebar-link { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-700/60 hover:text-white transition-all text-sm font-medium cursor-pointer; }
-        .sidebar-link.active { @apply bg-indigo-600 text-white font-semibold shadow-lg; box-shadow: 0 4px 14px rgba(79,70,229,0.45); }
+        .sidebar-link { @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-all text-sm font-medium cursor-pointer; }
+        .sidebar-link.active { @apply bg-indigo-600 text-white font-semibold; box-shadow: 0 4px 14px rgba(79,70,229,0.4); }
 
         /* Klassen die vom JS dynamisch gesetzt werden */
         .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
@@ -34,11 +34,11 @@
         .verify-denied  { @apply bg-red-50 border border-red-200 text-red-900; }
 
         /* Aktions-Buttons vom JS */
-        .btn-sm { @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all; }
-        .btn-outline { @apply border border-slate-200 text-slate-500 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700; }
-        .btn-outline-amber { @apply border border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700; }
-        .btn-outline-emerald { @apply border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700; }
-        .btn-danger  { @apply border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 hover:text-red-700; }
+        .btn-sm { @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap; }
+        .btn-outline         { @apply bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-800; }
+        .btn-outline-amber   { @apply bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400; }
+        .btn-outline-emerald { @apply bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400; }
+        .btn-danger          { @apply bg-red-50 border border-red-300 text-red-600 hover:bg-red-100 hover:border-red-400 hover:text-red-700; }
 
         dialog { border: none; border-radius: 1rem; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 520px; width: 90%; }
         dialog::backdrop { background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); }
