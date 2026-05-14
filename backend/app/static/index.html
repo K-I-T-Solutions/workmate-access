@@ -6,9 +6,6 @@
     <title>Workmate Access - Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
-        :root {
-            --nav-height: 3.5rem;
-        }
         nav.tabs {
             display: flex;
             gap: 0;
@@ -31,9 +28,7 @@
             border-bottom-color: var(--pico-primary);
             background: var(--pico-background-color);
         }
-        nav.tabs button:hover:not(.active) {
-            color: var(--pico-color);
-        }
+        nav.tabs button:hover:not(.active) { color: var(--pico-color); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         table { width: 100%; }
@@ -49,19 +44,13 @@
             font-weight: 600;
         }
         .status-granted { background: #d4edda; color: #155724; }
-        .status-denied { background: #f8d7da; color: #721c24; }
+        .status-denied  { background: #f8d7da; color: #721c24; }
         .filter-row { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: end; flex-wrap: wrap; }
         .filter-row label { margin-bottom: 0; }
         .filter-row input, .filter-row select { margin-bottom: 0; }
-        .verify-result {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-        }
+        .verify-result { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; }
         .verify-granted { background: #d4edda; border: 1px solid #c3e6cb; }
-        .verify-denied { background: #f8d7da; border: 1px solid #f5c6cb; }
-        header h1 { margin-bottom: 0.2rem; }
-        header p { margin-top: 0; color: var(--pico-muted-color); }
+        .verify-denied  { background: #f8d7da; border: 1px solid #f5c6cb; }
         .empty-state { text-align: center; padding: 2rem; color: var(--pico-muted-color); }
         .chip-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
         .chip-tag {
@@ -73,170 +62,131 @@
             border-radius: 1rem;
             font-size: 0.8rem;
         }
-        .chip-tag button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-            margin: 0;
-            font-size: 0.9rem;
-            line-height: 1;
-            color: var(--pico-del-color);
-        }
-        .chip-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--pico-muted-border-color); }
         .chip-add-row { display: flex; gap: 0.5rem; align-items: end; margin-top: 0.5rem; }
         .chip-add-row input { margin-bottom: 0; }
         .chip-add-row button { margin: 0; white-space: nowrap; }
-        .chip-table { margin-top: 0.5rem; }
         .chip-table td, .chip-table th { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        header .header-left h1 { margin-bottom: 0.2rem; }
+        header .header-left p  { margin-top: 0; color: var(--pico-muted-color); }
+        header .header-right { display: flex; align-items: center; gap: 1rem; }
+        .user-info { font-size: 0.85rem; color: var(--pico-muted-color); text-align: right; }
+        #loading-overlay {
+            position: fixed; inset: 0;
+            background: var(--pico-background-color);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        #loading-overlay p { color: var(--pico-muted-color); margin-top: 1rem; }
     </style>
 </head>
 <body>
-    <main class="container">
+    <div id="loading-overlay">
+        <h2>Workmate Access</h2>
+        <p id="loading-msg">Authentifizierung wird geladen&hellip;</p>
+    </div>
+
+    <main class="container" id="app" style="display:none">
         <header>
-            <h1>Workmate Access</h1>
-            <p>Admin Dashboard</p>
+            <div class="header-left">
+                <h1>Workmate Access</h1>
+                <p>Admin Dashboard</p>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <div id="auth-username"></div>
+                </div>
+                <button class="secondary outline" onclick="logout()" style="margin:0;padding:0.4rem 0.8rem;font-size:0.85rem">Abmelden</button>
+            </div>
         </header>
 
         <nav class="tabs">
-            <button class="active" onclick="switchTab('users')">Benutzer</button>
-            <button onclick="switchTab('rooms')">R&auml;ume</button>
-            <button onclick="switchTab('permissions')">Berechtigungen</button>
-            <button onclick="switchTab('logs')">Protokoll</button>
-            <button onclick="switchTab('verify')">Zugangskontrolle</button>
+            <button class="active" onclick="switchTab('users', event)">Benutzer</button>
+            <button onclick="switchTab('rooms', event)">R&auml;ume</button>
+            <button onclick="switchTab('permissions', event)">Berechtigungen</button>
+            <button onclick="switchTab('logs', event)">Protokoll</button>
+            <button onclick="switchTab('verify', event)">Zugangskontrolle</button>
         </nav>
 
-        <!-- ==================== BENUTZER TAB ==================== -->
+        <!-- BENUTZER -->
         <section id="tab-users" class="tab-content active">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h2>Benutzer</h2>
                 <button onclick="openUserDialog()">+ Neuer Benutzer</button>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Benutzername</th>
-                        <th>Anzeigename</th>
-                        <th>NFC Chips</th>
-                        <th>Rolle</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>ID</th><th>Benutzername</th><th>Anzeigename</th>
+                    <th>Telefon</th><th>NFC Chips</th><th>Rolle</th><th>Aktionen</th>
+                </tr></thead>
                 <tbody id="users-table"></tbody>
             </table>
         </section>
 
-        <!-- ==================== RÄUME TAB ==================== -->
+        <!-- RÄUME -->
         <section id="tab-rooms" class="tab-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h2>R&auml;ume</h2>
                 <button onclick="openRoomDialog()">+ Neuer Raum</button>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Beschreibung</th>
-                        <th>Zigbee Lock</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>ID</th><th>Name</th><th>Beschreibung</th><th>Zigbee Lock</th><th>Aktionen</th>
+                </tr></thead>
                 <tbody id="rooms-table"></tbody>
             </table>
         </section>
 
-        <!-- ==================== BERECHTIGUNGEN TAB ==================== -->
+        <!-- BERECHTIGUNGEN -->
         <section id="tab-permissions" class="tab-content">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
                 <h2>Berechtigungen</h2>
                 <button onclick="openPermissionDialog()">+ Neue Berechtigung</button>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Benutzer</th>
-                        <th>Raum</th>
-                        <th>Zugriffslevel</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>ID</th><th>Benutzer</th><th>Raum</th><th>Zugriffslevel</th><th>Aktionen</th>
+                </tr></thead>
                 <tbody id="permissions-table"></tbody>
             </table>
         </section>
 
-        <!-- ==================== PROTOKOLL TAB ==================== -->
+        <!-- PROTOKOLL -->
         <section id="tab-logs" class="tab-content">
             <h2>Zugangsprotokoll</h2>
             <div class="filter-row">
-                <label>
-                    Benutzer-ID
-                    <input type="text" id="log-filter-user" placeholder="z.B. KIT-0001">
-                </label>
-                <label>
-                    Raum-ID
-                    <input type="text" id="log-filter-room" placeholder="z.B. serverroom">
-                </label>
-                <label>
-                    Limit
-                    <input type="number" id="log-filter-limit" value="50" min="1" max="500">
-                </label>
+                <label>Benutzer-ID<input type="text" id="log-filter-user" placeholder="z.B. KIT-0001"></label>
+                <label>Raum-ID<input type="text" id="log-filter-room" placeholder="z.B. serverroom"></label>
+                <label>Limit<input type="number" id="log-filter-limit" value="50" min="1" max="500"></label>
                 <button onclick="loadLogs()">Filtern</button>
-                <label>
-                    <input type="checkbox" id="log-auto-refresh" checked>
-                    Auto-Refresh (5s)
-                </label>
+                <label><input type="checkbox" id="log-auto-refresh" checked> Auto-Refresh (5s)</label>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Zeitstempel</th>
-                        <th>Benutzer</th>
-                        <th>Raum</th>
-                        <th>Status</th>
-                        <th>Grund</th>
-                        <th>Ger&auml;t</th>
-                        <th>NFC</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>ID</th><th>Zeitstempel</th><th>Benutzer</th><th>Raum</th>
+                    <th>Status</th><th>Grund</th><th>Ger&auml;t</th><th>NFC</th>
+                </tr></thead>
                 <tbody id="logs-table"></tbody>
             </table>
         </section>
 
-        <!-- ==================== ZUGANGSKONTROLLE TAB ==================== -->
+        <!-- ZUGANGSKONTROLLE -->
         <section id="tab-verify" class="tab-content">
             <h2>Zugangskontrolle</h2>
             <div class="grid">
                 <article>
                     <header>Benutzer-Zugang pr&uuml;fen</header>
-                    <label>
-                        Benutzer-ID
-                        <input type="text" id="verify-user-id" placeholder="z.B. KIT-0001">
-                    </label>
-                    <label>
-                        Raum-ID
-                        <input type="text" id="verify-room-id" placeholder="z.B. serverroom">
-                    </label>
+                    <label>Benutzer-ID<input type="text" id="verify-user-id" placeholder="z.B. KIT-0001"></label>
+                    <label>Raum-ID<input type="text" id="verify-room-id" placeholder="z.B. serverroom"></label>
                     <button onclick="verifyAccess()">Zugang pr&uuml;fen</button>
                     <div id="verify-result"></div>
                 </article>
                 <article>
                     <header>NFC-Karte pr&uuml;fen</header>
-                    <label>
-                        Karten-UID
-                        <input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106">
-                    </label>
-                    <label>
-                        Ger&auml;te-ID
-                        <input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01">
-                    </label>
-                    <label>
-                        Raum-ID
-                        <input type="text" id="verify-card-room" placeholder="z.B. office_main">
-                    </label>
+                    <label>Karten-UID<input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106"></label>
+                    <label>Ger&auml;te-ID<input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01"></label>
+                    <label>Raum-ID<input type="text" id="verify-card-room" placeholder="z.B. office_main"></label>
                     <button onclick="verifyCard()">Karte pr&uuml;fen</button>
                     <div id="verify-card-result"></div>
                 </article>
@@ -244,7 +194,7 @@
         </section>
     </main>
 
-    <!-- ==================== DIALOGE ==================== -->
+    <!-- DIALOGE -->
     <dialog id="user-dialog">
         <article>
             <header>
@@ -253,24 +203,12 @@
             </header>
             <form id="user-form" onsubmit="saveUser(event)">
                 <input type="hidden" id="user-edit-id">
-                <label>
-                    ID (z.B. KIT-0001)
-                    <input type="text" id="user-id" required>
-                </label>
-                <label>
-                    Keycloak-ID
-                    <input type="text" id="user-keycloak-id" required>
-                </label>
-                <label>
-                    Benutzername
-                    <input type="text" id="user-username" required>
-                </label>
-                <label>
-                    Anzeigename
-                    <input type="text" id="user-display-name" required>
-                </label>
-                <label>
-                    Rolle
+                <label>ID (z.B. KIT-0001)<input type="text" id="user-id" required></label>
+                <label>Keycloak-ID<input type="text" id="user-keycloak-id" required></label>
+                <label>Benutzername<input type="text" id="user-username" required></label>
+                <label>Anzeigename<input type="text" id="user-display-name" required></label>
+                <label>Telefonnummer (E.164)<input type="text" id="user-phone" placeholder="+4915712345678"></label>
+                <label>Rolle
                     <select id="user-role">
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
@@ -291,25 +229,12 @@
                 <h3 id="chips-dialog-title">NFC Chips</h3>
             </header>
             <div class="chip-add-row">
-                <label style="flex:1;margin-bottom:0">
-                    Chip-UID
-                    <input type="text" id="chip-new-uid" placeholder="z.B. 74AFF106">
-                </label>
-                <label style="flex:1;margin-bottom:0">
-                    Label
-                    <input type="text" id="chip-new-label" placeholder="z.B. Karte, Anh&auml;nger">
-                </label>
+                <label style="flex:1;margin-bottom:0">Chip-UID<input type="text" id="chip-new-uid" placeholder="z.B. 74AFF106"></label>
+                <label style="flex:1;margin-bottom:0">Label<input type="text" id="chip-new-label" placeholder="z.B. Karte"></label>
                 <button onclick="addChip()" style="margin-bottom:0">Hinzuf&uuml;gen</button>
             </div>
             <table class="chip-table">
-                <thead>
-                    <tr>
-                        <th>UID</th>
-                        <th>Label</th>
-                        <th>Erstellt</th>
-                        <th></th>
-                    </tr>
-                </thead>
+                <thead><tr><th>UID</th><th>Label</th><th>Erstellt</th><th></th></tr></thead>
                 <tbody id="chips-table"></tbody>
             </table>
         </article>
@@ -323,22 +248,10 @@
             </header>
             <form id="room-form" onsubmit="saveRoom(event)">
                 <input type="hidden" id="room-edit-id">
-                <label>
-                    ID (z.B. serverroom)
-                    <input type="text" id="room-id" required>
-                </label>
-                <label>
-                    Name
-                    <input type="text" id="room-name" required>
-                </label>
-                <label>
-                    Beschreibung
-                    <input type="text" id="room-description" placeholder="Optional">
-                </label>
-                <label>
-                    Zigbee Lock-ID
-                    <input type="text" id="room-zigbee" placeholder="Optional">
-                </label>
+                <label>ID (z.B. serverroom)<input type="text" id="room-id" required></label>
+                <label>Name<input type="text" id="room-name" required></label>
+                <label>Beschreibung<input type="text" id="room-description" placeholder="Optional"></label>
+                <label>Zigbee Lock-ID<input type="text" id="room-zigbee" placeholder="Optional"></label>
                 <footer>
                     <button type="button" class="secondary" onclick="document.getElementById('room-dialog').close()">Abbrechen</button>
                     <button type="submit">Speichern</button>
@@ -354,16 +267,9 @@
                 <h3>Neue Berechtigung</h3>
             </header>
             <form id="permission-form" onsubmit="savePermission(event)">
-                <label>
-                    Benutzer
-                    <select id="perm-user-id" required></select>
-                </label>
-                <label>
-                    Raum
-                    <select id="perm-room-id" required></select>
-                </label>
-                <label>
-                    Zugriffslevel
+                <label>Benutzer<select id="perm-user-id" required></select></label>
+                <label>Raum<select id="perm-room-id" required></select></label>
+                <label>Zugriffslevel
                     <select id="perm-access-level">
                         <option value="read">Lesen</option>
                         <option value="write">Schreiben</option>
@@ -380,9 +286,7 @@
 
     <dialog id="confirm-dialog">
         <article>
-            <header>
-                <h3>Best&auml;tigung</h3>
-            </header>
+            <header><h3>Best&auml;tigung</h3></header>
             <p id="confirm-message"></p>
             <footer>
                 <button class="secondary" onclick="document.getElementById('confirm-dialog').close()">Abbrechen</button>
@@ -393,41 +297,87 @@
 
     <script>
     const API = '/api/v1';
+    let keycloak = null;
     let logRefreshInterval = null;
     let currentChipsUserId = null;
 
-    // ==================== TAB NAVIGATION ====================
-    function switchTab(tab) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-        event.target.classList.add('active');
-
-        if (tab === 'users') loadUsers();
-        else if (tab === 'rooms') loadRooms();
-        else if (tab === 'permissions') loadPermissions();
-        else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
-
-        if (tab !== 'logs') stopLogRefresh();
+    // ==================== AUTH ====================
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = () => reject(new Error('Skript konnte nicht geladen werden: ' + src));
+            document.head.appendChild(s);
+        });
     }
 
-    // ==================== FETCH HELPER ====================
+    async function initAuth() {
+        const loadingMsg = document.getElementById('loading-msg');
+        try {
+            const config = await fetch('/api/v1/config').then(r => r.json());
+
+            loadingMsg.textContent = 'Keycloak wird geladen…';
+            await loadScript(config.keycloak_url + '/js/keycloak.js');
+
+            keycloak = new Keycloak({
+                url: config.keycloak_url,
+                realm: config.keycloak_realm,
+                clientId: config.keycloak_client_id,
+            });
+
+            loadingMsg.textContent = 'Anmeldung wird geprüft…';
+            const authenticated = await keycloak.init({
+                onLoad: 'login-required',
+                checkLoginIframe: false,
+                pkceMethod: 'S256',
+            });
+
+            if (!authenticated) {
+                keycloak.login();
+                return;
+            }
+
+            // Token alle 30s aktualisieren
+            setInterval(() => {
+                keycloak.updateToken(60).catch(() => keycloak.login());
+            }, 30000);
+
+            document.getElementById('auth-username').textContent =
+                keycloak.tokenParsed?.preferred_username || '';
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('app').style.display = '';
+            loadUsers();
+        } catch (e) {
+            loadingMsg.textContent = 'Fehler: ' + e.message;
+        }
+    }
+
+    function logout() {
+        keycloak.logout();
+    }
+
+    // ==================== API HELPER ====================
     async function api(path, options = {}) {
+        const token = keycloak?.token;
         const res = await fetch(API + path, {
-            headers: { 'Content-Type': 'application/json', ...options.headers },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+                ...options.headers,
+            },
             ...options,
         });
+        if (res.status === 401) { keycloak?.login(); return; }
         if (res.status === 204) return null;
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `Fehler ${res.status}`);
+            throw new Error(err.detail || 'Fehler ' + res.status);
         }
         return res.json();
     }
 
-    function showError(msg) {
-        alert('Fehler: ' + msg);
-    }
+    function showError(msg) { alert('Fehler: ' + msg); }
 
     function esc(str) {
         if (str == null) return '';
@@ -446,72 +396,85 @@
         dialog.showModal();
     }
 
+    // ==================== TAB NAVIGATION ====================
+    function switchTab(tab, event) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        if (event?.target) event.target.classList.add('active');
+
+        if (tab === 'users') loadUsers();
+        else if (tab === 'rooms') loadRooms();
+        else if (tab === 'permissions') loadPermissions();
+        else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
+
+        if (tab !== 'logs') stopLogRefresh();
+    }
+
     // ==================== BENUTZER ====================
-    // Cache for chips per user (loaded alongside users)
     let userChipsCache = {};
 
     async function loadUsers() {
         try {
             const users = await api('/users/');
+            if (!users) return;
             const tbody = document.getElementById('users-table');
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Keine Benutzer vorhanden</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Keine Benutzer vorhanden</td></tr>';
                 return;
             }
-            // Load chips for all users in parallel
             const chipsResults = await Promise.all(
                 users.map(u => api('/users/' + u.id + '/chips').catch(() => []))
             );
             userChipsCache = {};
-            users.forEach((u, i) => { userChipsCache[u.id] = chipsResults[i]; });
+            users.forEach((u, i) => { userChipsCache[u.id] = chipsResults[i] || []; });
 
             tbody.innerHTML = users.map(u => {
                 const chips = userChipsCache[u.id] || [];
                 const chipTags = chips.length > 0
                     ? chips.map(c => `<span class="chip-tag">${esc(c.chip_uid)}${c.label ? ' (' + esc(c.label) + ')' : ''}</span>`).join(' ')
                     : '&mdash;';
-                return `
-                    <tr>
-                        <td>${esc(u.id)}</td>
-                        <td>${esc(u.username)}</td>
-                        <td>${esc(u.display_name)}</td>
-                        <td><div class="chip-list">${chipTags}</div></td>
-                        <td>${esc(u.role)}</td>
-                        <td class="actions">
-                            <button class="outline" onclick='editUser(${JSON.stringify(u)})'>Bearbeiten</button>
-                            <button class="outline" onclick="openChipsDialog('${esc(u.id)}', '${esc(u.display_name)}')">NFC</button>
-                            <button class="outline contrast" onclick="deleteUser('${esc(u.id)}')">L&ouml;schen</button>
-                        </td>
-                    </tr>
-                `;
+                return `<tr>
+                    <td>${esc(u.id)}</td>
+                    <td>${esc(u.username)}</td>
+                    <td>${esc(u.display_name)}</td>
+                    <td>${esc(u.phone_number) || '&mdash;'}</td>
+                    <td><div class="chip-list">${chipTags}</div></td>
+                    <td>${esc(u.role)}</td>
+                    <td class="actions">
+                        <button class="outline" onclick='editUser(${JSON.stringify(u)})'>Bearbeiten</button>
+                        <button class="outline" onclick="openChipsDialog('${esc(u.id)}','${esc(u.display_name)}')">NFC</button>
+                        <button class="outline contrast" onclick="deleteUser('${esc(u.id)}')">L&ouml;schen</button>
+                    </td>
+                </tr>`;
             }).join('');
         } catch (e) { showError(e.message); }
     }
 
     function openUserDialog() {
-        const dialog = document.getElementById('user-dialog');
         document.getElementById('user-form').reset();
         document.getElementById('user-edit-id').value = '';
         document.getElementById('user-dialog-title').textContent = 'Neuer Benutzer';
-        document.getElementById('user-id').disabled = false;
-        document.getElementById('user-keycloak-id').disabled = false;
-        document.getElementById('user-username').disabled = false;
-        dialog.showModal();
+        ['user-id', 'user-keycloak-id', 'user-username', 'user-phone'].forEach(id => {
+            document.getElementById(id).disabled = false;
+        });
+        document.getElementById('user-dialog').showModal();
     }
 
     function editUser(user) {
-        const dialog = document.getElementById('user-dialog');
         document.getElementById('user-dialog-title').textContent = 'Benutzer bearbeiten';
         document.getElementById('user-edit-id').value = user.id;
         document.getElementById('user-id').value = user.id;
-        document.getElementById('user-id').disabled = true;
         document.getElementById('user-keycloak-id').value = user.keycloak_id;
-        document.getElementById('user-keycloak-id').disabled = true;
         document.getElementById('user-username').value = user.username;
-        document.getElementById('user-username').disabled = true;
         document.getElementById('user-display-name').value = user.display_name;
+        document.getElementById('user-phone').value = user.phone_number || '';
         document.getElementById('user-role').value = user.role || 'user';
-        dialog.showModal();
+        ['user-id', 'user-keycloak-id', 'user-username'].forEach(id => {
+            document.getElementById(id).disabled = true;
+        });
+        document.getElementById('user-phone').disabled = false;
+        document.getElementById('user-dialog').showModal();
     }
 
     async function saveUser(e) {
@@ -527,6 +490,7 @@
                     }),
                 });
             } else {
+                const phone = document.getElementById('user-phone').value.trim();
                 await api('/users/', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -534,6 +498,7 @@
                         keycloak_id: document.getElementById('user-keycloak-id').value,
                         username: document.getElementById('user-username').value,
                         display_name: document.getElementById('user-display-name').value,
+                        phone_number: phone || null,
                         role: document.getElementById('user-role').value,
                     }),
                 });
@@ -555,7 +520,7 @@
     // ==================== NFC CHIPS ====================
     async function openChipsDialog(userId, displayName) {
         currentChipsUserId = userId;
-        document.getElementById('chips-dialog-title').textContent = 'NFC Chips - ' + displayName;
+        document.getElementById('chips-dialog-title').textContent = 'NFC Chips – ' + displayName;
         document.getElementById('chip-new-uid').value = '';
         document.getElementById('chip-new-label').value = '';
         document.getElementById('chips-dialog').showModal();
@@ -566,24 +531,21 @@
         if (!currentChipsUserId) return;
         try {
             const chips = await api('/users/' + currentChipsUserId + '/chips');
+            if (!chips) return;
             const tbody = document.getElementById('chips-table');
             if (chips.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine Chips registriert</td></tr>';
                 return;
             }
-            tbody.innerHTML = chips.map(c => {
-                const created = new Date(c.created_at).toLocaleString('de-DE');
-                return `
-                    <tr>
-                        <td><code>${esc(c.chip_uid)}</code></td>
-                        <td>${esc(c.label) || '&mdash;'}</td>
-                        <td>${created}</td>
-                        <td>
-                            <button class="outline contrast" style="padding:0.2rem 0.4rem;font-size:0.8rem;margin:0" onclick="removeChip(${c.id})">Entfernen</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = chips.map(c => `<tr>
+                <td><code>${esc(c.chip_uid)}</code></td>
+                <td>${esc(c.label) || '&mdash;'}</td>
+                <td>${new Date(c.created_at).toLocaleString('de-DE')}</td>
+                <td>
+                    <button class="outline contrast" style="padding:0.2rem 0.4rem;font-size:0.8rem;margin:0"
+                        onclick="removeChip(${c.id})">Entfernen</button>
+                </td>
+            </tr>`).join('');
         } catch (e) { showError(e.message); }
     }
 
@@ -599,7 +561,6 @@
             document.getElementById('chip-new-uid').value = '';
             document.getElementById('chip-new-label').value = '';
             await loadChips();
-            // Also refresh user table in background
             loadUsers();
         } catch (e) { showError(e.message); }
     }
@@ -618,37 +579,34 @@
     async function loadRooms() {
         try {
             const rooms = await api('/rooms/');
+            if (!rooms) return;
             const tbody = document.getElementById('rooms-table');
             if (rooms.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine R&auml;ume vorhanden</td></tr>';
                 return;
             }
-            tbody.innerHTML = rooms.map(r => `
-                <tr>
-                    <td>${esc(r.id)}</td>
-                    <td>${esc(r.name)}</td>
-                    <td>${esc(r.description) || '&mdash;'}</td>
-                    <td>${esc(r.zigbee_lock_id) || '&mdash;'}</td>
-                    <td class="actions">
-                        <button class="outline" onclick='editRoom(${JSON.stringify(r)})'>Bearbeiten</button>
-                        <button class="outline contrast" onclick="deleteRoom('${esc(r.id)}')">L&ouml;schen</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = rooms.map(r => `<tr>
+                <td>${esc(r.id)}</td>
+                <td>${esc(r.name)}</td>
+                <td>${esc(r.description) || '&mdash;'}</td>
+                <td>${esc(r.zigbee_lock_id) || '&mdash;'}</td>
+                <td class="actions">
+                    <button class="outline" onclick='editRoom(${JSON.stringify(r)})'>Bearbeiten</button>
+                    <button class="outline contrast" onclick="deleteRoom('${esc(r.id)}')">L&ouml;schen</button>
+                </td>
+            </tr>`).join('');
         } catch (e) { showError(e.message); }
     }
 
     function openRoomDialog() {
-        const dialog = document.getElementById('room-dialog');
         document.getElementById('room-form').reset();
         document.getElementById('room-edit-id').value = '';
         document.getElementById('room-dialog-title').textContent = 'Neuer Raum';
         document.getElementById('room-id').disabled = false;
-        dialog.showModal();
+        document.getElementById('room-dialog').showModal();
     }
 
     function editRoom(room) {
-        const dialog = document.getElementById('room-dialog');
         document.getElementById('room-dialog-title').textContent = 'Raum bearbeiten';
         document.getElementById('room-edit-id').value = room.id;
         document.getElementById('room-id').value = room.id;
@@ -656,7 +614,7 @@
         document.getElementById('room-name').value = room.name;
         document.getElementById('room-description').value = room.description || '';
         document.getElementById('room-zigbee').value = room.zigbee_lock_id || '';
-        dialog.showModal();
+        document.getElementById('room-dialog').showModal();
     }
 
     async function saveRoom(e) {
@@ -701,39 +659,32 @@
     async function loadPermissions() {
         try {
             const perms = await api('/permissions/');
+            if (!perms) return;
             const tbody = document.getElementById('permissions-table');
             if (perms.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Berechtigungen vorhanden</td></tr>';
                 return;
             }
-            tbody.innerHTML = perms.map(p => `
-                <tr>
-                    <td>${p.id}</td>
-                    <td>${esc(p.user_id)}</td>
-                    <td>${esc(p.room_id)}</td>
-                    <td>${esc(p.access_level)}</td>
-                    <td class="actions">
-                        <button class="outline contrast" onclick="deletePermission(${p.id})">Entfernen</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = perms.map(p => `<tr>
+                <td>${p.id}</td>
+                <td>${esc(p.user_id)}</td>
+                <td>${esc(p.room_id)}</td>
+                <td>${esc(p.access_level)}</td>
+                <td class="actions">
+                    <button class="outline contrast" onclick="deletePermission(${p.id})">Entfernen</button>
+                </td>
+            </tr>`).join('');
         } catch (e) { showError(e.message); }
     }
 
     async function openPermissionDialog() {
         try {
-            const [users, rooms] = await Promise.all([
-                api('/users/'),
-                api('/rooms/'),
-            ]);
-            const userSelect = document.getElementById('perm-user-id');
-            userSelect.innerHTML = users.map(u =>
-                `<option value="${esc(u.id)}">${esc(u.display_name)} (${esc(u.id)})</option>`
-            ).join('');
-            const roomSelect = document.getElementById('perm-room-id');
-            roomSelect.innerHTML = rooms.map(r =>
-                `<option value="${esc(r.id)}">${esc(r.name)} (${esc(r.id)})</option>`
-            ).join('');
+            const [users, rooms] = await Promise.all([api('/users/'), api('/rooms/')]);
+            if (!users || !rooms) return;
+            document.getElementById('perm-user-id').innerHTML =
+                users.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)} (${esc(u.id)})</option>`).join('');
+            document.getElementById('perm-room-id').innerHTML =
+                rooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)} (${esc(r.id)})</option>`).join('');
             document.getElementById('permission-form').reset();
             document.getElementById('permission-dialog').showModal();
         } catch (e) { showError(e.message); }
@@ -767,58 +718,51 @@
     // ==================== PROTOKOLL ====================
     async function loadLogs() {
         try {
+            const params = new URLSearchParams();
             const userId = document.getElementById('log-filter-user').value;
             const roomId = document.getElementById('log-filter-room').value;
-            const limit = document.getElementById('log-filter-limit').value || 50;
-            let params = new URLSearchParams();
+            const limit  = document.getElementById('log-filter-limit').value || 50;
             if (userId) params.set('user_id', userId);
             if (roomId) params.set('room_id', roomId);
             params.set('limit', limit);
 
             const logs = await api('/access/logs?' + params.toString());
+            if (!logs) return;
             const tbody = document.getElementById('logs-table');
             if (logs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Keine Protokolleintr&auml;ge</td></tr>';
                 return;
             }
             tbody.innerHTML = logs.map(l => {
-                const ts = new Date(l.timestamp).toLocaleString('de-DE');
                 const badge = l.granted
                     ? '<span class="status-badge status-granted">Gew&auml;hrt</span>'
                     : '<span class="status-badge status-denied">Verweigert</span>';
-                return `
-                    <tr>
-                        <td>${l.id}</td>
-                        <td>${ts}</td>
-                        <td>${esc(l.user_id) || '&mdash;'}</td>
-                        <td>${esc(l.room_id) || '&mdash;'}</td>
-                        <td>${badge}</td>
-                        <td>${esc(l.reason) || '&mdash;'}</td>
-                        <td>${esc(l.device_id) || '&mdash;'}</td>
-                        <td>${esc(l.nfc_chip_id) || '&mdash;'}</td>
-                    </tr>
-                `;
+                return `<tr>
+                    <td>${l.id}</td>
+                    <td>${new Date(l.timestamp).toLocaleString('de-DE')}</td>
+                    <td>${esc(l.user_id) || '&mdash;'}</td>
+                    <td>${esc(l.room_id) || '&mdash;'}</td>
+                    <td>${badge}</td>
+                    <td>${esc(l.reason) || '&mdash;'}</td>
+                    <td>${esc(l.device_id) || '&mdash;'}</td>
+                    <td>${esc(l.nfc_chip_id) || '&mdash;'}</td>
+                </tr>`;
             }).join('');
         } catch (e) { showError(e.message); }
     }
 
     function startLogRefresh() {
         stopLogRefresh();
-        if (document.getElementById('log-auto-refresh').checked) {
+        if (document.getElementById('log-auto-refresh').checked)
             logRefreshInterval = setInterval(loadLogs, 5000);
-        }
     }
 
     function stopLogRefresh() {
-        if (logRefreshInterval) {
-            clearInterval(logRefreshInterval);
-            logRefreshInterval = null;
-        }
+        if (logRefreshInterval) { clearInterval(logRefreshInterval); logRefreshInterval = null; }
     }
 
-    document.getElementById('log-auto-refresh').addEventListener('change', (e) => {
-        if (e.target.checked) startLogRefresh();
-        else stopLogRefresh();
+    document.getElementById('log-auto-refresh').addEventListener('change', e => {
+        if (e.target.checked) startLogRefresh(); else stopLogRefresh();
     });
 
     // ==================== ZUGANGSKONTROLLE ====================
@@ -826,59 +770,54 @@
         const userId = document.getElementById('verify-user-id').value;
         const roomId = document.getElementById('verify-room-id').value;
         const resultDiv = document.getElementById('verify-result');
-        if (!userId || !roomId) {
-            resultDiv.innerHTML = '<p>Bitte Benutzer-ID und Raum-ID eingeben.</p>';
-            return;
-        }
+        if (!userId || !roomId) { resultDiv.innerHTML = '<p>Bitte Benutzer-ID und Raum-ID eingeben.</p>'; return; }
         try {
             const res = await api('/access/verify', {
                 method: 'POST',
                 body: JSON.stringify({ user_id: userId, room_id: roomId }),
             });
+            if (!res) return;
             const cls = res.granted ? 'verify-granted' : 'verify-denied';
-            const status = res.granted ? 'Zugang gew&auml;hrt' : 'Zugang verweigert';
-            resultDiv.innerHTML = `
-                <div class="verify-result ${cls}">
-                    <strong>${status}</strong><br>
-                    Benutzer: ${esc(res.user_id)}<br>
-                    Raum: ${esc(res.room_id)}<br>
-                    ${res.reason ? 'Grund: ' + esc(res.reason) + '<br>' : ''}
-                    Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
-                </div>
-            `;
-        } catch (e) { resultDiv.innerHTML = `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`; }
+            resultDiv.innerHTML = `<div class="verify-result ${cls}">
+                <strong>${res.granted ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
+                Benutzer: ${esc(res.user_id)}<br>Raum: ${esc(res.room_id)}<br>
+                ${res.reason ? 'Grund: ' + esc(res.reason) + '<br>' : ''}
+                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+            </div>`;
+        } catch (e) {
+            document.getElementById('verify-result').innerHTML =
+                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+        }
     }
 
     async function verifyCard() {
-        const cardUid = document.getElementById('verify-card-uid').value;
+        const cardUid  = document.getElementById('verify-card-uid').value;
         const deviceId = document.getElementById('verify-device-id').value;
-        const roomId = document.getElementById('verify-card-room').value;
+        const roomId   = document.getElementById('verify-card-room').value;
         const resultDiv = document.getElementById('verify-card-result');
-        if (!cardUid || !deviceId || !roomId) {
-            resultDiv.innerHTML = '<p>Bitte alle Felder ausf&uuml;llen.</p>';
-            return;
-        }
+        if (!cardUid || !deviceId || !roomId) { resultDiv.innerHTML = '<p>Bitte alle Felder ausf&uuml;llen.</p>'; return; }
         try {
             const res = await api('/access/verify-card', {
                 method: 'POST',
                 body: JSON.stringify({ card_uid: cardUid, device_id: deviceId, room_id: roomId }),
             });
+            if (!res) return;
             const cls = res.access ? 'verify-granted' : 'verify-denied';
-            const status = res.access ? 'Zugang gew&auml;hrt' : 'Zugang verweigert';
-            resultDiv.innerHTML = `
-                <div class="verify-result ${cls}">
-                    <strong>${status}</strong><br>
-                    ${res.message}<br>
-                    ${res.user_id ? 'Benutzer: ' + esc(res.user_id) + '<br>' : ''}
-                    ${res.user_name ? 'Name: ' + esc(res.user_name) + '<br>' : ''}
-                    Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
-                </div>
-            `;
-        } catch (e) { resultDiv.innerHTML = `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`; }
+            resultDiv.innerHTML = `<div class="verify-result ${cls}">
+                <strong>${res.access ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
+                ${esc(res.message)}<br>
+                ${res.user_id ? 'Benutzer: ' + esc(res.user_id) + '<br>' : ''}
+                ${res.user_name ? 'Name: ' + esc(res.user_name) + '<br>' : ''}
+                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+            </div>`;
+        } catch (e) {
+            document.getElementById('verify-card-result').innerHTML =
+                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+        }
     }
 
     // ==================== INIT ====================
-    loadUsers();
+    initAuth();
     </script>
 </body>
 </html>

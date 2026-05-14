@@ -44,3 +44,11 @@ def read_root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+@app.get("/api/v1/config")
+def frontend_config():
+    return {
+        "keycloak_url": settings.KEYCLOAK_URL,
+        "keycloak_realm": settings.KEYCLOAK_REALM,
+        "keycloak_client_id": settings.KEYCLOAK_CLIENT_ID,
+    }
