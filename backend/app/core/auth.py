@@ -29,7 +29,7 @@ def _fetch_jwks() -> dict:
     now = time.monotonic()
     if _jwks_cache and (now - _jwks_fetched_at) < _JWKS_TTL:
         return _jwks_cache
-    url = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs"
+    url = f"{settings.keycloak_base_url}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs"
     resp = httpx.get(url, timeout=10)
     resp.raise_for_status()
     _jwks_cache = resp.json()

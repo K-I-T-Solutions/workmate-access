@@ -17,9 +17,14 @@ class Settings(BaseSettings):
 
     # Keycloak
     KEYCLOAK_URL: str = "https://login.intern.phudevelopement.xyz"
+    KEYCLOAK_INTERNAL_URL: str = ""  # Docker-interner Hostname, z.B. http://keycloak:8080
     KEYCLOAK_CLIENT_ID: str = ""
     KEYCLOAK_CLIENT_SECRET: str = ""
     KEYCLOAK_REALM: str = "kit"
+
+    @property
+    def keycloak_base_url(self) -> str:
+        return self.KEYCLOAK_INTERNAL_URL or self.KEYCLOAK_URL
 
     # API
     API_V1_STR: str = "/api/v1"
