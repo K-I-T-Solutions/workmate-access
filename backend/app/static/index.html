@@ -69,7 +69,17 @@
         .chip-table th, .chip-table td { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
         code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8em; background: #f1f5f9; padding: 0.1em 0.4em; border-radius: 0.25rem; }
 
+        /* ===== RÄUME GRUPPEN ===== */
+        .room-group-header { display:flex; align-items:center; gap:0.5rem; padding:0.625rem 1rem; background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #6366f1; border-radius:0.75rem 0.75rem 0 0; }
+        .room-group-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+        .room-group:last-child .room-group-header:not(:has(+ *)) { border-radius:0.75rem; }
+        .color-swatch { width:1.5rem; height:1.5rem; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all 0.15s; flex-shrink:0; }
+        .color-swatch.selected, .color-swatch:hover { border-color: white; box-shadow: 0 0 0 2px #6366f1; transform:scale(1.15); }
+        /* ===== BERECHTIGUNGEN KARTEN ===== */
+        .perm-card { background:#fff; border-radius:0.75rem; border:1px solid #e2e8f0; padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
         /* ===== DARK MODE ===== */
+        body.dark .room-group-header { background:#1e293b; border-color:#334155; }
+        body.dark .perm-card { background:#1e293b !important; border-color:#334155 !important; }
         body.dark { background: #0f172a; color: #e2e8f0; }
         body.dark .bg-white { background: #1e293b !important; }
         body.dark .bg-slate-50 { background: #0f172a !important; }
@@ -232,21 +242,18 @@
                     <h1 class="text-xl font-bold text-slate-900">R&auml;ume</h1>
                     <p class="text-slate-500 text-sm mt-0.5">Zugangsbereiche und Schlösser verwalten</p>
                 </div>
-                <button onclick="openRoomDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Neuer Raum
-                </button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead><tr>
-                            <th>ID</th><th>Name</th><th>Beschreibung</th><th>Zigbee Lock</th><th>Aktionen</th>
-                        </tr></thead>
-                        <tbody id="rooms-table"></tbody>
-                    </table>
+                <div class="flex items-center gap-2">
+                    <button onclick="openGroupDialog()" class="flex items-center gap-2 px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                        Gruppen
+                    </button>
+                    <button onclick="openRoomDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Neuer Raum
+                    </button>
                 </div>
             </div>
+            <div id="rooms-container" class="space-y-4"></div>
         </section>
 
         <!-- BERECHTIGUNGEN -->
@@ -254,23 +261,10 @@
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">Berechtigungen</h1>
-                    <p class="text-slate-500 text-sm mt-0.5">Zugangsrechte zwischen Benutzern und R&auml;umen</p>
-                </div>
-                <button onclick="openPermissionDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Neue Berechtigung
-                </button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead><tr>
-                            <th>ID</th><th>Benutzer</th><th>Raum</th><th>Zugriffslevel</th><th>Aktionen</th>
-                        </tr></thead>
-                        <tbody id="permissions-table"></tbody>
-                    </table>
+                    <p class="text-slate-500 text-sm mt-0.5">Zugangsrechte pro Raum verwalten</p>
                 </div>
             </div>
+            <div id="permissions-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
         </section>
 
         <!-- PROTOKOLL -->
@@ -498,8 +492,41 @@
                 <label class="block text-xs font-medium text-slate-500 mb-1">Zigbee Lock-ID</label>
                 <input type="text" id="room-zigbee" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
             </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Gruppe</label>
+                <select id="room-group-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                    <option value="">Keine Gruppe</option>
+                </select>
+            </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('room-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="group-dialog">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="group-dialog-title" class="text-lg font-semibold text-slate-900">Neue Gruppe</h3>
+            <button onclick="document.getElementById('group-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="group-form" onsubmit="saveGroup(event)" class="space-y-4">
+            <input type="hidden" id="group-edit-id">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
+                <input type="text" id="group-name" required placeholder="z.B. Admin Räume" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-2">Farbe</label>
+                <div id="color-swatches" class="flex flex-wrap gap-2"></div>
+                <input type="hidden" id="group-color" value="#6366f1">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('group-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
                 <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
             </div>
         </form>
@@ -943,38 +970,140 @@ function removeYubikey(ykId) {
     });
 }
 
-// ==================== RÄUME ====================
+// ==================== RÄUME + GRUPPEN ====================
+const GROUP_COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+let _groupCache = [];
+
 async function loadRooms() {
     try {
-        const rooms = await api('/rooms/');
-        if (!rooms) return;
-        const tbody = document.getElementById('rooms-table');
-        if (rooms.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Räume vorhanden</td></tr>';
-            return;
-        }
-        tbody.innerHTML = rooms.map(r => `<tr>
-            <td><code>${esc(r.id)}</code></td>
-            <td class="font-medium">${esc(r.name)}</td>
-            <td class="text-slate-500">${esc(r.description) || '<span class="text-slate-300">&mdash;</span>'}</td>
-            <td class="font-mono text-xs text-slate-500">${esc(r.zigbee_lock_id) || '<span class="text-slate-300">&mdash;</span>'}</td>
-            <td class="actions">
-                <button class="btn-sm btn-outline" onclick='editRoom(${JSON.stringify(r)})'>${IC.edit} Bearbeiten</button>
-                <button class="btn-sm btn-danger" onclick="deleteRoom('${esc(r.id)}')">${IC.trash} L&ouml;schen</button>
-            </td>
-        </tr>`).join('');
+        const [rooms, groups] = await Promise.all([api('/rooms/'), api('/room-groups/')]);
+        if (!rooms || !groups) return;
+        _groupCache = groups;
+        const container = document.getElementById('rooms-container');
+
+        const groupMap = Object.fromEntries(groups.map(g => [g.id, g]));
+        const grouped = {};
+        const ungrouped = [];
+        rooms.forEach(r => {
+            if (r.group_id && groupMap[r.group_id]) {
+                (grouped[r.group_id] = grouped[r.group_id] || []).push(r);
+            } else ungrouped.push(r);
+        });
+
+        let html = '';
+        groups.forEach(g => { html += renderRoomGroup(g, grouped[g.id] || []); });
+        if (ungrouped.length || groups.length === 0) html += renderRoomGroup(null, ungrouped);
+
+        container.innerHTML = html || '<p class="empty-state">Keine Räume vorhanden</p>';
     } catch (e) { showError(e.message); }
 }
 
-function openRoomDialog() {
+function renderRoomGroup(group, rooms) {
+    const color  = group?.color || '#94a3b8';
+    const name   = group ? esc(group.name) : 'Ohne Gruppe';
+    const rows   = rooms.map(r => `<tr>
+        <td><code>${esc(r.id)}</code></td>
+        <td class="font-medium">${esc(r.name)}</td>
+        <td class="text-slate-500">${esc(r.description) || '<span class="text-slate-300">&mdash;</span>'}</td>
+        <td class="font-mono text-xs text-slate-500">${esc(r.zigbee_lock_id) || '<span class="text-slate-300">&mdash;</span>'}</td>
+        <td class="actions">
+            <button class="btn-sm btn-outline" onclick='editRoom(${JSON.stringify(r)})'>${IC.edit} Bearbeiten</button>
+            <button class="btn-sm btn-danger" onclick="deleteRoom('${esc(r.id)}')">${IC.trash} L&ouml;schen</button>
+        </td>
+    </tr>`).join('') || `<tr><td colspan="5" class="empty-state text-sm py-4">Keine R&auml;ume in dieser Gruppe</td></tr>`;
+
+    return `<div class="room-group">
+        <div class="room-group-header" style="border-left-color:${color}">
+            <span class="room-group-dot" style="background:${color}"></span>
+            <span class="font-semibold text-slate-700 text-sm">${name}</span>
+            <span class="text-xs text-slate-400 ml-1">(${rooms.length})</span>
+            ${group ? `<div class="ml-auto flex items-center gap-1">
+                <button class="btn-sm btn-outline" onclick='editGroup(${JSON.stringify(group)})'>${IC.edit} Umbenennen</button>
+                <button class="btn-sm btn-danger" onclick="deleteGroup(${group.id})">${IC.trash}</button>
+            </div>` : ''}
+        </div>
+        <div class="bg-white rounded-b-xl border border-t-0 border-slate-200 overflow-hidden">
+            <table class="data-table">
+                <thead><tr><th>ID</th><th>Name</th><th>Beschreibung</th><th>Zigbee Lock</th><th>Aktionen</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
+// ---- Gruppen CRUD ----
+const GROUP_COLORS_LIST = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+
+function renderColorSwatches(selected) {
+    document.getElementById('color-swatches').innerHTML = GROUP_COLORS_LIST.map(c =>
+        `<span class="color-swatch${c===selected?' selected':''}" style="background:${c}" onclick="selectColor('${c}')"></span>`
+    ).join('');
+    document.getElementById('group-color').value = selected;
+}
+
+function selectColor(c) {
+    document.getElementById('group-color').value = c;
+    document.querySelectorAll('.color-swatch').forEach(s => {
+        s.classList.toggle('selected', s.style.background === c || s.style.backgroundColor === c);
+    });
+}
+
+function openGroupDialog() {
+    document.getElementById('group-form').reset();
+    document.getElementById('group-edit-id').value = '';
+    document.getElementById('group-dialog-title').textContent = 'Neue Gruppe';
+    renderColorSwatches('#6366f1');
+    document.getElementById('group-dialog').showModal();
+}
+
+function editGroup(group) {
+    document.getElementById('group-dialog-title').textContent = 'Gruppe bearbeiten';
+    document.getElementById('group-edit-id').value = group.id;
+    document.getElementById('group-name').value = group.name;
+    renderColorSwatches(group.color || '#6366f1');
+    document.getElementById('group-dialog').showModal();
+}
+
+async function saveGroup(e) {
+    e.preventDefault();
+    const editId = document.getElementById('group-edit-id').value;
+    const payload = {
+        name:  document.getElementById('group-name').value,
+        color: document.getElementById('group-color').value,
+    };
+    try {
+        if (editId) {
+            await api('/room-groups/' + editId, { method: 'PATCH', body: JSON.stringify(payload) });
+        } else {
+            await api('/room-groups/', { method: 'POST', body: JSON.stringify(payload) });
+        }
+        document.getElementById('group-dialog').close();
+        showSuccess('Gruppe gespeichert');
+        loadRooms();
+    } catch (e) { showError(e.message); }
+}
+
+function deleteGroup(groupId) {
+    confirmAction('Gruppe wirklich löschen? Räume werden keiner Gruppe zugewiesen.', async () => {
+        try {
+            await api('/room-groups/' + groupId, { method: 'DELETE' });
+            showSuccess('Gruppe gelöscht');
+            loadRooms();
+        } catch (e) { showError(e.message); }
+    });
+}
+
+// ---- Raum CRUD ----
+async function openRoomDialog() {
     document.getElementById('room-form').reset();
     document.getElementById('room-edit-id').value = '';
     document.getElementById('room-dialog-title').textContent = 'Neuer Raum';
     document.getElementById('room-id').disabled = false;
+    await _fillGroupSelect(null);
     document.getElementById('room-dialog').showModal();
 }
 
-function editRoom(room) {
+async function editRoom(room) {
     document.getElementById('room-dialog-title').textContent = 'Raum bearbeiten';
     document.getElementById('room-edit-id').value = room.id;
     document.getElementById('room-id').value = room.id;
@@ -982,12 +1111,21 @@ function editRoom(room) {
     document.getElementById('room-name').value = room.name;
     document.getElementById('room-description').value = room.description || '';
     document.getElementById('room-zigbee').value = room.zigbee_lock_id || '';
+    await _fillGroupSelect(room.group_id);
     document.getElementById('room-dialog').showModal();
+}
+
+async function _fillGroupSelect(selectedId) {
+    const groups = _groupCache.length ? _groupCache : (await api('/room-groups/') || []);
+    const sel = document.getElementById('room-group-id');
+    sel.innerHTML = '<option value="">Keine Gruppe</option>' +
+        groups.map(g => `<option value="${g.id}"${g.id==selectedId?' selected':''}>${esc(g.name)}</option>`).join('');
 }
 
 async function saveRoom(e) {
     e.preventDefault();
     const editId = document.getElementById('room-edit-id').value;
+    const groupVal = document.getElementById('room-group-id').value;
     try {
         if (editId) {
             await api('/rooms/' + editId, {
@@ -996,6 +1134,7 @@ async function saveRoom(e) {
                     name: document.getElementById('room-name').value,
                     description: document.getElementById('room-description').value || null,
                     zigbee_lock_id: document.getElementById('room-zigbee').value || null,
+                    group_id: groupVal ? parseInt(groupVal) : null,
                 }),
             });
         } else {
@@ -1006,6 +1145,7 @@ async function saveRoom(e) {
                     name: document.getElementById('room-name').value,
                     description: document.getElementById('room-description').value || null,
                     zigbee_lock_id: document.getElementById('room-zigbee').value || null,
+                    group_id: groupVal ? parseInt(groupVal) : null,
                 }),
             });
         }
@@ -1026,41 +1166,79 @@ function deleteRoom(roomId) {
 }
 
 // ==================== BERECHTIGUNGEN ====================
+const LEVEL_BADGE = {
+    admin: 'background:#ede9fe;color:#6d28d9',
+    write: 'background:#fef3c7;color:#92400e',
+    read:  'background:#f1f5f9;color:#475569',
+};
+const LEVEL_LABEL = { admin: 'Admin', write: 'Schreiben', read: 'Lesen' };
+
 async function loadPermissions() {
     try {
-        const perms = await api('/permissions/');
-        if (!perms) return;
-        const tbody = document.getElementById('permissions-table');
-        if (perms.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Berechtigungen vorhanden</td></tr>';
+        const [perms, rooms, users] = await Promise.all([
+            api('/permissions/'), api('/rooms/'), api('/users/'),
+        ]);
+        if (!perms || !rooms || !users) return;
+
+        const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+        const permsByRoom = {};
+        perms.forEach(p => (permsByRoom[p.room_id] = permsByRoom[p.room_id] || []).push(p));
+
+        const container = document.getElementById('permissions-container');
+        if (!rooms.length) {
+            container.innerHTML = '<p class="empty-state col-span-3">Keine R&auml;ume vorhanden</p>';
             return;
         }
-        const levelBadge = l => ({
-            admin: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Admin</span>',
-            write: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Schreiben</span>',
-            read:  '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Lesen</span>',
-        }[l] || esc(l));
-        tbody.innerHTML = perms.map(p => `<tr>
-            <td class="text-slate-400 text-xs">${p.id}</td>
-            <td><code>${esc(p.user_id)}</code></td>
-            <td><code>${esc(p.room_id)}</code></td>
-            <td>${levelBadge(p.access_level)}</td>
-            <td class="actions">
-                <button class="btn-sm btn-danger" onclick="deletePermission(${p.id})">${IC.trash} Entfernen</button>
-            </td>
-        </tr>`).join('');
+
+        container.innerHTML = rooms.map(room => {
+            const rp = permsByRoom[room.id] || [];
+            const pills = rp.map(p => {
+                const u = userMap[p.user_id] || { display_name: p.user_id };
+                const style = LEVEL_BADGE[p.access_level] || LEVEL_BADGE.read;
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold" style="${style}">
+                    ${esc(u.display_name)}
+                    <span class="opacity-60 text-xs">${LEVEL_LABEL[p.access_level]||p.access_level}</span>
+                    <button onclick="deletePermission(${p.id})" class="ml-1 opacity-50 hover:opacity-100 hover:text-red-600 font-bold leading-none transition-all">&times;</button>
+                </span>`;
+            }).join('');
+
+            return `<div class="perm-card">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <div class="font-semibold text-slate-900 text-sm">${esc(room.name)}</div>
+                        <code class="text-xs text-slate-400">${esc(room.id)}</code>
+                    </div>
+                    <button onclick="openPermissionDialogForRoom('${esc(room.id)}')"
+                        class="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-semibold transition-colors">
+                        + Zugang
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-1.5 min-h-8">
+                    ${pills || '<span class="text-xs text-slate-400 italic">Kein Zugang vergeben</span>'}
+                </div>
+            </div>`;
+        }).join('');
     } catch (e) { showError(e.message); }
 }
 
 async function openPermissionDialog() {
+    await _openPermDialog(null);
+}
+
+async function openPermissionDialogForRoom(roomId) {
+    await _openPermDialog(roomId);
+}
+
+async function _openPermDialog(presetRoomId) {
     try {
         const [users, rooms] = await Promise.all([api('/users/'), api('/rooms/')]);
         if (!users || !rooms) return;
         document.getElementById('perm-user-id').innerHTML =
             users.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)} (${esc(u.id)})</option>`).join('');
         document.getElementById('perm-room-id').innerHTML =
-            rooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)} (${esc(r.id)})</option>`).join('');
+            rooms.map(r => `<option value="${esc(r.id)}"${r.id===presetRoomId?' selected':''}>${esc(r.name)} (${esc(r.id)})</option>`).join('');
         document.getElementById('permission-form').reset();
+        if (presetRoomId) document.getElementById('perm-room-id').value = presetRoomId;
         document.getElementById('permission-dialog').showModal();
     } catch (e) { showError(e.message); }
 }

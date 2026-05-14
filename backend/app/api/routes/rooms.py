@@ -13,17 +13,20 @@ class RoomCreate(BaseModel):
     name: str
     description: Optional[str] = None
     zigbee_lock_id: Optional[str] = None
+    group_id: Optional[int] = None
 
 class RoomUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     zigbee_lock_id: Optional[str] = None
+    group_id: Optional[int] = None
 
 class RoomResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
     zigbee_lock_id: Optional[str] = None
+    group_id: Optional[int] = None
     is_active: bool
 
     class Config:

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from .core.config import settings
-from .api.routes import access, rooms, users, permissions, nfc_chips, yubikeys
+from .api.routes import access, rooms, room_groups, users, permissions, nfc_chips, yubikeys
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -26,6 +26,7 @@ app.add_middleware(
 # Routes
 app.include_router(access.router)
 app.include_router(rooms.router)
+app.include_router(room_groups.router)
 app.include_router(users.router)
 app.include_router(permissions.router)
 app.include_router(nfc_chips.router)
