@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://workmate_private:workmate_private@central_postgres:5432/workmate_private
+      DATABASE_URL: postgresql://workmate:workmate@central_postgres:5432/workmate_access
     networks:
       - core_network
 
