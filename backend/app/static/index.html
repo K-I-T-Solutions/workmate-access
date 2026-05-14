@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workmate Access</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -18,8 +19,9 @@
     </script>
     <style>
         [x-cloak] { display: none; }
-        .sidebar-link { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-sm font-medium cursor-pointer; }
-        .sidebar-link.active { @apply bg-indigo-600 text-white; }
+        .sidebar-link { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-sm font-medium cursor-pointer; position: relative; overflow: hidden; }
+        .sidebar-link.active { color: white; font-weight: 600; background: rgba(79,70,229,0.35); }
+        .sidebar-link.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #a5b4fc; border-radius: 0 2px 2px 0; }
 
         /* Klassen die vom JS dynamisch gesetzt werden */
         .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
@@ -126,7 +128,10 @@
 
         <div class="px-3 py-4 border-t border-slate-700">
             <div class="flex items-center gap-2.5 mb-3">
-                <div class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0" id="auth-avatar">?</div>
+                <div class="relative w-8 h-8 flex-shrink-0">
+                    <img id="auth-gravatar" class="w-8 h-8 rounded-full object-cover absolute inset-0" style="display:none" alt="">
+                    <div id="auth-avatar" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">?</div>
+                </div>
                 <div class="text-sm text-slate-300 truncate" id="auth-username"></div>
             </div>
             <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium transition-colors">
@@ -544,8 +549,19 @@ async function initAuth() {
         }, 30000);
 
         const username = keycloak.tokenParsed?.preferred_username || '';
+        const email    = keycloak.tokenParsed?.email || '';
         document.getElementById('auth-username').textContent = username;
         document.getElementById('auth-avatar').textContent = username.charAt(0).toUpperCase() || '?';
+
+        if (email && typeof md5 === 'function') {
+            const hash = md5(email.trim().toLowerCase());
+            const img  = document.getElementById('auth-gravatar');
+            img.src    = 'https://www.gravatar.com/avatar/' + hash + '?s=64&d=404';
+            img.onload = () => {
+                img.style.display = '';
+                document.getElementById('auth-avatar').style.display = 'none';
+            };
+        }
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('app').style.display = '';
         loadUsers();
