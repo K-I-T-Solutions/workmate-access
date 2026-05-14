@@ -1,956 +1,1140 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="light">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workmate Access - Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <title>Workmate Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { DEFAULT: '#4f46e5', hover: '#4338ca', light: '#eef2ff' }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        nav.tabs {
-            display: flex;
-            gap: 0;
-            border-bottom: 2px solid var(--pico-primary);
-            margin-bottom: 1.5rem;
-        }
-        nav.tabs button {
-            border: none;
-            border-radius: 0.5rem 0.5rem 0 0;
-            background: var(--pico-card-background-color);
-            padding: 0.6rem 1.2rem;
-            cursor: pointer;
-            font-weight: 500;
-            color: var(--pico-muted-color);
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-        }
-        nav.tabs button.active {
-            color: var(--pico-primary);
-            border-bottom-color: var(--pico-primary);
-            background: var(--pico-background-color);
-        }
-        nav.tabs button:hover:not(.active) { color: var(--pico-color); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        table { width: 100%; }
-        .actions { display: flex; gap: 0.3rem; }
-        .actions button { padding: 0.3rem 0.6rem; font-size: 0.85rem; margin: 0; }
-        dialog { max-width: 500px; width: 90%; }
-        dialog::backdrop { background: rgba(0,0,0,0.4); }
-        .status-badge {
-            display: inline-block;
-            padding: 0.15rem 0.5rem;
-            border-radius: 1rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .status-granted { background: #d4edda; color: #155724; }
-        .status-denied  { background: #f8d7da; color: #721c24; }
-        .filter-row { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: end; flex-wrap: wrap; }
-        .filter-row label { margin-bottom: 0; }
-        .filter-row input, .filter-row select { margin-bottom: 0; }
-        .verify-result { padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; }
-        .verify-granted { background: #d4edda; border: 1px solid #c3e6cb; }
-        .verify-denied  { background: #f8d7da; border: 1px solid #f5c6cb; }
-        .empty-state { text-align: center; padding: 2rem; color: var(--pico-muted-color); }
-        .chip-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-        .chip-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            background: var(--pico-secondary-background);
-            padding: 0.15rem 0.5rem;
-            border-radius: 1rem;
-            font-size: 0.8rem;
-        }
-        .chip-add-row { display: flex; gap: 0.5rem; align-items: end; margin-top: 0.5rem; }
-        .chip-add-row input { margin-bottom: 0; }
-        .chip-add-row button { margin: 0; white-space: nowrap; }
-        .chip-table td, .chip-table th { padding: 0.3rem 0.5rem; font-size: 0.85rem; }
-        header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-        header .header-left h1 { margin-bottom: 0.2rem; }
-        header .header-left p  { margin-top: 0; color: var(--pico-muted-color); }
-        header .header-right { display: flex; align-items: center; gap: 1rem; }
-        .user-info { font-size: 0.85rem; color: var(--pico-muted-color); text-align: right; }
-        #loading-overlay {
-            position: fixed; inset: 0;
-            background: var(--pico-background-color);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 9999;
-        }
-        #loading-overlay p { color: var(--pico-muted-color); margin-top: 1rem; }
+        [x-cloak] { display: none; }
+        .sidebar-link { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-sm font-medium cursor-pointer; }
+        .sidebar-link.active { @apply bg-indigo-600 text-white; }
+
+        /* Klassen die vom JS dynamisch gesetzt werden */
+        .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
+        .chip-list { @apply flex flex-wrap gap-1; }
+        .empty-state { @apply text-center py-8 text-slate-400 text-sm; }
+        .status-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
+        .status-granted { @apply bg-emerald-100 text-emerald-800; }
+        .status-denied  { @apply bg-red-100 text-red-700; }
+        .verify-result  { @apply p-4 rounded-xl mt-3 text-sm leading-relaxed; }
+        .verify-granted { @apply bg-emerald-50 border border-emerald-200 text-emerald-900; }
+        .verify-denied  { @apply bg-red-50 border border-red-200 text-red-900; }
+
+        /* Aktions-Buttons vom JS */
+        .btn-sm { @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium transition-colors; }
+        .btn-outline { @apply border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300; }
+        .btn-danger  { @apply border border-red-200 text-red-600 hover:bg-red-50; }
+
+        dialog { border: none; border-radius: 1rem; padding: 0; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 520px; width: 90%; }
+        dialog::backdrop { background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 500; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); animation: slideIn 0.2s ease; max-width: 360px; }
+        .toast-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+        .toast-error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+        @keyframes slideIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+
+        /* Tabellen */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #f8fafc; padding: 0.6rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
+        .data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #1e293b; vertical-align: middle; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover { background: #f8fafc; }
+        .actions { display: flex; gap: 0.375rem; align-items: center; flex-wrap: wrap; }
+        .chip-table th, .chip-table td { padding: 0.5rem 0.75rem; font-size: 0.8125rem; }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8em; background: #f1f5f9; padding: 0.1em 0.4em; border-radius: 0.25rem; }
     </style>
 </head>
-<body>
-    <div id="loading-overlay">
-        <h2>Workmate Access</h2>
-        <p id="loading-msg">Authentifizierung wird geladen&hellip;</p>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center z-50">
+    <div class="flex items-center gap-3 mb-6">
+        <svg class="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <span class="text-2xl font-bold text-white tracking-tight">Workmate Access</span>
     </div>
+    <svg class="spinner w-6 h-6 text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+    </svg>
+    <p id="loading-msg" class="text-slate-400 text-sm">Authentifizierung wird geladen&hellip;</p>
+</div>
 
-    <main class="container" id="app" style="display:none">
-        <header>
-            <div class="header-left">
-                <h1>Workmate Access</h1>
-                <p>Admin Dashboard</p>
-            </div>
-            <div class="header-right">
-                <div class="user-info">
-                    <div id="auth-username"></div>
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- App Shell -->
+<div id="app" style="display:none" class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-60 bg-slate-900 flex flex-col flex-shrink-0">
+        <div class="px-4 py-5 border-b border-slate-700">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
                 </div>
-                <button class="secondary outline" onclick="logout()" style="margin:0;padding:0.4rem 0.8rem;font-size:0.85rem">Abmelden</button>
+                <div>
+                    <div class="text-white font-semibold text-sm leading-tight">Workmate Access</div>
+                    <div class="text-slate-400 text-xs">Admin Panel</div>
+                </div>
             </div>
-        </header>
+        </div>
 
-        <nav class="tabs">
-            <button class="active" onclick="switchTab('users', event)">Benutzer</button>
-            <button onclick="switchTab('rooms', event)">R&auml;ume</button>
-            <button onclick="switchTab('permissions', event)">Berechtigungen</button>
-            <button onclick="switchTab('logs', event)">Protokoll</button>
-            <button onclick="switchTab('verify', event)">Zugangskontrolle</button>
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <div class="sidebar-link active" id="nav-users" onclick="switchTab('users', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Benutzer
+            </div>
+            <div class="sidebar-link" id="nav-rooms" onclick="switchTab('rooms', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                R&auml;ume
+            </div>
+            <div class="sidebar-link" id="nav-permissions" onclick="switchTab('permissions', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Berechtigungen
+            </div>
+            <div class="sidebar-link" id="nav-logs" onclick="switchTab('logs', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Protokoll
+            </div>
+            <div class="sidebar-link" id="nav-verify" onclick="switchTab('verify', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Zugangskontrolle
+            </div>
         </nav>
 
-        <!-- BENUTZER -->
-        <section id="tab-users" class="tab-content active">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <h2>Benutzer</h2>
-                <button onclick="openUserDialog()">+ Neuer Benutzer</button>
+        <div class="px-3 py-4 border-t border-slate-700">
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0" id="auth-avatar">?</div>
+                <div class="text-sm text-slate-300 truncate" id="auth-username"></div>
             </div>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Benutzername</th><th>Anzeigename</th>
-                    <th>Telefon</th><th>NFC Chips</th><th>YubiKeys</th><th>Rolle</th><th>Aktionen</th>
-                </tr></thead>
-                <tbody id="users-table"></tbody>
-            </table>
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Abmelden
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 overflow-y-auto">
+
+        <!-- BENUTZER -->
+        <section id="tab-users" class="tab-content p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">Benutzer</h1>
+                    <p class="text-slate-500 text-sm mt-0.5">Verwaltung aller registrierten Benutzer</p>
+                </div>
+                <button onclick="openUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Neuer Benutzer
+                </button>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ID</th><th>Benutzername</th><th>Anzeigename</th>
+                            <th>Telefon</th><th>NFC Chips</th><th>YubiKeys</th><th>Rolle</th><th>Aktionen</th>
+                        </tr></thead>
+                        <tbody id="users-table"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- RÄUME -->
-        <section id="tab-rooms" class="tab-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <h2>R&auml;ume</h2>
-                <button onclick="openRoomDialog()">+ Neuer Raum</button>
+        <section id="tab-rooms" class="tab-content p-6" style="display:none">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">R&auml;ume</h1>
+                    <p class="text-slate-500 text-sm mt-0.5">Zugangsbereiche und Schlösser verwalten</p>
+                </div>
+                <button onclick="openRoomDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Neuer Raum
+                </button>
             </div>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Name</th><th>Beschreibung</th><th>Zigbee Lock</th><th>Aktionen</th>
-                </tr></thead>
-                <tbody id="rooms-table"></tbody>
-            </table>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ID</th><th>Name</th><th>Beschreibung</th><th>Zigbee Lock</th><th>Aktionen</th>
+                        </tr></thead>
+                        <tbody id="rooms-table"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- BERECHTIGUNGEN -->
-        <section id="tab-permissions" class="tab-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-                <h2>Berechtigungen</h2>
-                <button onclick="openPermissionDialog()">+ Neue Berechtigung</button>
+        <section id="tab-permissions" class="tab-content p-6" style="display:none">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">Berechtigungen</h1>
+                    <p class="text-slate-500 text-sm mt-0.5">Zugangsrechte zwischen Benutzern und R&auml;umen</p>
+                </div>
+                <button onclick="openPermissionDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Neue Berechtigung
+                </button>
             </div>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Benutzer</th><th>Raum</th><th>Zugriffslevel</th><th>Aktionen</th>
-                </tr></thead>
-                <tbody id="permissions-table"></tbody>
-            </table>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ID</th><th>Benutzer</th><th>Raum</th><th>Zugriffslevel</th><th>Aktionen</th>
+                        </tr></thead>
+                        <tbody id="permissions-table"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- PROTOKOLL -->
-        <section id="tab-logs" class="tab-content">
-            <h2>Zugangsprotokoll</h2>
-            <div class="filter-row">
-                <label>Benutzer-ID<input type="text" id="log-filter-user" placeholder="z.B. KIT-0001"></label>
-                <label>Raum-ID<input type="text" id="log-filter-room" placeholder="z.B. serverroom"></label>
-                <label>Limit<input type="number" id="log-filter-limit" value="50" min="1" max="500"></label>
-                <button onclick="loadLogs()">Filtern</button>
-                <button class="secondary outline" onclick="exportLogs()">CSV exportieren</button>
-                <label><input type="checkbox" id="log-auto-refresh" checked> Auto-Refresh (5s)</label>
+        <section id="tab-logs" class="tab-content p-6" style="display:none">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">Zugangsprotokoll</h1>
+                    <p class="text-slate-500 text-sm mt-0.5">Alle Zugangsereignisse in Echtzeit</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                        <input type="checkbox" id="log-auto-refresh" checked class="w-4 h-4 rounded accent-indigo-600">
+                        Auto-Refresh
+                    </label>
+                    <button onclick="exportLogs()" class="flex items-center gap-2 px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        CSV Export
+                    </button>
+                </div>
             </div>
-            <table>
-                <thead><tr>
-                    <th>ID</th><th>Zeitstempel</th><th>Benutzer</th><th>Raum</th>
-                    <th>Status</th><th>Grund</th><th>Ger&auml;t</th><th>NFC</th>
-                </tr></thead>
-                <tbody id="logs-table"></tbody>
-            </table>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
+                <div class="flex flex-wrap gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer-ID</label>
+                        <input type="text" id="log-filter-user" placeholder="z.B. KIT-0001" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
+                        <input type="text" id="log-filter-room" placeholder="z.B. serverroom" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Limit</label>
+                        <input type="number" id="log-filter-limit" value="50" min="1" max="500" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadLogs()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Filtern</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>ID</th><th>Zeitstempel</th><th>Benutzer</th><th>Raum</th>
+                            <th>Status</th><th>Grund</th><th>Ger&auml;t</th><th>NFC</th>
+                        </tr></thead>
+                        <tbody id="logs-table"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- ZUGANGSKONTROLLE -->
-        <section id="tab-verify" class="tab-content">
-            <h2>Zugangskontrolle</h2>
-            <div class="grid">
-                <article>
-                    <header>Benutzer-Zugang pr&uuml;fen</header>
-                    <label>Benutzer-ID<input type="text" id="verify-user-id" placeholder="z.B. KIT-0001"></label>
-                    <label>Raum-ID<input type="text" id="verify-room-id" placeholder="z.B. serverroom"></label>
-                    <button onclick="verifyAccess()">Zugang pr&uuml;fen</button>
+        <section id="tab-verify" class="tab-content p-6" style="display:none">
+            <div class="mb-6">
+                <h1 class="text-xl font-bold text-slate-900">Zugangskontrolle</h1>
+                <p class="text-slate-500 text-sm mt-0.5">Zugangsberechtigung manuell pr&uuml;fen</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        </div>
+                        <h2 class="font-semibold text-slate-900 text-sm">Benutzer-Zugang</h2>
+                    </div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer-ID</label>
+                    <input type="text" id="verify-user-id" placeholder="z.B. KIT-0001" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
+                    <input type="text" id="verify-room-id" placeholder="z.B. serverroom" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <button onclick="verifyAccess()" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-result"></div>
-                </article>
-                <article>
-                    <header>YubiKey pr&uuml;fen</header>
-                    <label>Yubico OTP (44 Zeichen)<input type="text" id="verify-yubikey-otp" placeholder="ccccccxxxxxx…" maxlength="44"></label>
-                    <label>Raum-ID<input type="text" id="verify-yubikey-room" placeholder="z.B. office_main"></label>
-                    <button onclick="verifyYubikey()">YubiKey pr&uuml;fen</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        </div>
+                        <h2 class="font-semibold text-slate-900 text-sm">YubiKey</h2>
+                    </div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Yubico OTP (44 Zeichen)</label>
+                    <input type="text" id="verify-yubikey-otp" placeholder="ccccccxxxxxx…" maxlength="44" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
+                    <input type="text" id="verify-yubikey-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <button onclick="verifyYubikey()" class="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-yubikey-result"></div>
-                </article>
-                <article>
-                    <header>NFC-Karte pr&uuml;fen</header>
-                    <label>Karten-UID<input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106"></label>
-                    <label>Ger&auml;te-ID<input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01"></label>
-                    <label>Raum-ID<input type="text" id="verify-card-room" placeholder="z.B. office_main"></label>
-                    <button onclick="verifyCard()">Karte pr&uuml;fen</button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h2 class="font-semibold text-slate-900 text-sm">NFC-Karte</h2>
+                    </div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Karten-UID</label>
+                    <input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Ger&auml;te-ID</label>
+                    <input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
+                    <input type="text" id="verify-card-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <button onclick="verifyCard()" class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-card-result"></div>
-                </article>
+                </div>
             </div>
         </section>
-    </main>
 
-    <!-- DIALOGE -->
-    <dialog id="user-dialog">
-        <article>
-            <header>
-                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('user-dialog').close()"></button>
-                <h3 id="user-dialog-title">Neuer Benutzer</h3>
-            </header>
-            <form id="user-form" onsubmit="saveUser(event)">
-                <input type="hidden" id="user-edit-id">
-                <label>ID (z.B. KIT-0001)<input type="text" id="user-id" required></label>
-                <label>Keycloak-ID<input type="text" id="user-keycloak-id" required></label>
-                <label>Benutzername<input type="text" id="user-username" required></label>
-                <label>Anzeigename<input type="text" id="user-display-name" required></label>
-                <label>Telefonnummer (E.164)<input type="text" id="user-phone" placeholder="+4915712345678"></label>
-                <label>Rolle
-                    <select id="user-role">
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </label>
-                <footer>
-                    <button type="button" class="secondary" onclick="document.getElementById('user-dialog').close()">Abbrechen</button>
-                    <button type="submit">Speichern</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
+    </div>
+</div>
 
-    <dialog id="chips-dialog">
-        <article style="max-width:550px">
-            <header>
-                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('chips-dialog').close()"></button>
-                <h3 id="chips-dialog-title">NFC Chips</h3>
-            </header>
-            <div class="chip-add-row">
-                <label style="flex:1;margin-bottom:0">Chip-UID<input type="text" id="chip-new-uid" placeholder="z.B. 74AFF106"></label>
-                <label style="flex:1;margin-bottom:0">Label<input type="text" id="chip-new-label" placeholder="z.B. Karte"></label>
-                <button onclick="addChip()" style="margin-bottom:0">Hinzuf&uuml;gen</button>
+<!-- DIALOGE -->
+<dialog id="user-dialog">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="user-dialog-title" class="text-lg font-semibold text-slate-900">Neuer Benutzer</h3>
+            <button onclick="document.getElementById('user-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="user-form" onsubmit="saveUser(event)" class="space-y-3">
+            <input type="hidden" id="user-edit-id">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. KIT-0001)</label>
+                <input type="text" id="user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
-            <table class="chip-table">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Keycloak-ID</label>
+                <input type="text" id="user-keycloak-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Benutzername</label>
+                <input type="text" id="user-username" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Anzeigename</label>
+                <input type="text" id="user-display-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Telefonnummer (E.164)</label>
+                <input type="text" id="user-phone" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Rolle</label>
+                <select id="user-role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('user-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<dialog id="chips-dialog" style="max-width:560px">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="chips-dialog-title" class="text-lg font-semibold text-slate-900">NFC Chips</h3>
+            <button onclick="document.getElementById('chips-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="chip-new-uid" placeholder="Chip-UID (z.B. 74AFF106)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="text" id="chip-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <button onclick="addChip()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
+        </div>
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="data-table chip-table">
                 <thead><tr><th>UID</th><th>Label</th><th>Erstellt</th><th></th></tr></thead>
                 <tbody id="chips-table"></tbody>
             </table>
-        </article>
-    </dialog>
+        </div>
+    </div>
+</dialog>
 
-    <dialog id="yubikeys-dialog">
-        <article style="max-width:550px">
-            <header>
-                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('yubikeys-dialog').close()"></button>
-                <h3 id="yubikeys-dialog-title">YubiKeys</h3>
-            </header>
-            <div class="chip-add-row">
-                <label style="flex:1;margin-bottom:0">OTP oder Public-ID<input type="text" id="yk-new-otp" placeholder="44-stelliger OTP oder 12-stellige ID"></label>
-                <label style="flex:1;margin-bottom:0">Label<input type="text" id="yk-new-label" placeholder="z.B. Büro-Key"></label>
-                <button onclick="addYubikey()" style="margin-bottom:0">Hinzuf&uuml;gen</button>
-            </div>
-            <table class="chip-table">
+<dialog id="yubikeys-dialog" style="max-width:560px">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="yubikeys-dialog-title" class="text-lg font-semibold text-slate-900">YubiKeys</h3>
+            <button onclick="document.getElementById('yubikeys-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="yk-new-otp" placeholder="OTP oder Public-ID" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="text" id="yk-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <button onclick="addYubikey()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
+        </div>
+        <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="data-table chip-table">
                 <thead><tr><th>Public-ID</th><th>Label</th><th>Erstellt</th><th></th></tr></thead>
                 <tbody id="yubikeys-table"></tbody>
             </table>
-        </article>
-    </dialog>
+        </div>
+    </div>
+</dialog>
 
-    <dialog id="room-dialog">
-        <article>
-            <header>
-                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('room-dialog').close()"></button>
-                <h3 id="room-dialog-title">Neuer Raum</h3>
-            </header>
-            <form id="room-form" onsubmit="saveRoom(event)">
-                <input type="hidden" id="room-edit-id">
-                <label>ID (z.B. serverroom)<input type="text" id="room-id" required></label>
-                <label>Name<input type="text" id="room-name" required></label>
-                <label>Beschreibung<input type="text" id="room-description" placeholder="Optional"></label>
-                <label>Zigbee Lock-ID<input type="text" id="room-zigbee" placeholder="Optional"></label>
-                <footer>
-                    <button type="button" class="secondary" onclick="document.getElementById('room-dialog').close()">Abbrechen</button>
-                    <button type="submit">Speichern</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
+<dialog id="room-dialog">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="room-dialog-title" class="text-lg font-semibold text-slate-900">Neuer Raum</h3>
+            <button onclick="document.getElementById('room-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="room-form" onsubmit="saveRoom(event)" class="space-y-3">
+            <input type="hidden" id="room-edit-id">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. serverroom)</label>
+                <input type="text" id="room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
+                <input type="text" id="room-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Beschreibung</label>
+                <input type="text" id="room-description" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Zigbee Lock-ID</label>
+                <input type="text" id="room-zigbee" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('room-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            </div>
+        </form>
+    </div>
+</dialog>
 
-    <dialog id="permission-dialog">
-        <article>
-            <header>
-                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('permission-dialog').close()"></button>
-                <h3>Neue Berechtigung</h3>
-            </header>
-            <form id="permission-form" onsubmit="savePermission(event)">
-                <label>Benutzer<select id="perm-user-id" required></select></label>
-                <label>Raum<select id="perm-room-id" required></select></label>
-                <label>Zugriffslevel
-                    <select id="perm-access-level">
-                        <option value="read">Lesen</option>
-                        <option value="write">Schreiben</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </label>
-                <footer>
-                    <button type="button" class="secondary" onclick="document.getElementById('permission-dialog').close()">Abbrechen</button>
-                    <button type="submit">Speichern</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
+<dialog id="permission-dialog">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-semibold text-slate-900">Neue Berechtigung</h3>
+            <button onclick="document.getElementById('permission-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <form id="permission-form" onsubmit="savePermission(event)" class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer</label>
+                <select id="perm-user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Raum</label>
+                <select id="perm-room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Zugriffslevel</label>
+                <select id="perm-access-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                    <option value="read">Lesen</option>
+                    <option value="write">Schreiben</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('permission-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            </div>
+        </form>
+    </div>
+</dialog>
 
-    <dialog id="confirm-dialog">
-        <article>
-            <header><h3>Best&auml;tigung</h3></header>
-            <p id="confirm-message"></p>
-            <footer>
-                <button class="secondary" onclick="document.getElementById('confirm-dialog').close()">Abbrechen</button>
-                <button id="confirm-ok" class="contrast">Best&auml;tigen</button>
-            </footer>
-        </article>
-    </dialog>
+<dialog id="confirm-dialog">
+    <div class="p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Best&auml;tigung</h3>
+        </div>
+        <p id="confirm-message" class="text-sm text-slate-600 mb-5"></p>
+        <div class="flex justify-end gap-2">
+            <button onclick="document.getElementById('confirm-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+            <button id="confirm-ok" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">Best&auml;tigen</button>
+        </div>
+    </div>
+</dialog>
 
-    <script>
-    const API = '/api/v1';
-    let keycloak = null;
-    let logRefreshInterval = null;
-    let currentChipsUserId = null;
+<script>
+const API = '/api/v1';
+let keycloak = null;
+let logRefreshInterval = null;
+let currentChipsUserId = null;
 
-    // ==================== AUTH ====================
-    async function initAuth() {
-        const loadingMsg = document.getElementById('loading-msg');
-        try {
-            const config = await fetch('/api/v1/config').then(r => r.json());
+// ==================== TOAST ====================
+function showToast(msg, type = 'error') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const icon = type === 'success'
+        ? '<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+        : '<svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = icon + '<span>' + msg + '</span>';
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
 
-            loadingMsg.textContent = 'Keycloak wird geladen…';
-            const { default: Keycloak } = await import('/static/keycloak.js');
+function showError(msg) { showToast(msg, 'error'); }
+function showSuccess(msg) { showToast(msg, 'success'); }
 
-            keycloak = new Keycloak({
-                url: config.keycloak_url,
-                realm: config.keycloak_realm,
-                clientId: config.keycloak_client_id,
+// ==================== AUTH ====================
+async function initAuth() {
+    const loadingMsg = document.getElementById('loading-msg');
+    try {
+        const config = await fetch('/api/v1/config').then(r => r.json());
+        loadingMsg.textContent = 'Keycloak wird geladen…';
+        const { default: Keycloak } = await import('/static/keycloak.js');
+
+        keycloak = new Keycloak({
+            url: config.keycloak_url,
+            realm: config.keycloak_realm,
+            clientId: config.keycloak_client_id,
+        });
+
+        loadingMsg.textContent = 'Anmeldung wird geprüft…';
+        const authenticated = await keycloak.init({
+            onLoad: 'login-required',
+            checkLoginIframe: false,
+            pkceMethod: 'S256',
+        });
+
+        if (!authenticated) { keycloak.login(); return; }
+
+        setInterval(() => {
+            keycloak.updateToken(60).catch(() => keycloak.login());
+        }, 30000);
+
+        const username = keycloak.tokenParsed?.preferred_username || '';
+        document.getElementById('auth-username').textContent = username;
+        document.getElementById('auth-avatar').textContent = username.charAt(0).toUpperCase() || '?';
+        document.getElementById('loading-overlay').style.display = 'none';
+        document.getElementById('app').style.display = '';
+        loadUsers();
+    } catch (e) {
+        loadingMsg.textContent = 'Fehler: ' + e.message;
+    }
+}
+
+function logout() { keycloak.logout(); }
+
+// ==================== API HELPER ====================
+async function api(path, options = {}) {
+    const token = keycloak?.token;
+    const res = await fetch(API + path, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
+            ...options.headers,
+        },
+        ...options,
+    });
+    if (res.status === 401) {
+        try { await keycloak?.updateToken(-1); } catch { keycloak?.login(); return; }
+        return api(path, options);
+    }
+    if (res.status === 204) return null;
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Fehler ' + res.status);
+    }
+    return res.json();
+}
+
+function esc(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+function confirmAction(message, onConfirm) {
+    const dialog = document.getElementById('confirm-dialog');
+    document.getElementById('confirm-message').textContent = message;
+    const btn = document.getElementById('confirm-ok');
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', () => { dialog.close(); onConfirm(); });
+    dialog.showModal();
+}
+
+// ==================== NAVIGATION ====================
+function switchTab(tab, el) {
+    document.querySelectorAll('.tab-content').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).style.display = '';
+    (el?.closest?.('.sidebar-link') || document.getElementById('nav-' + tab))?.classList.add('active');
+
+    if (tab === 'users') loadUsers();
+    else if (tab === 'rooms') loadRooms();
+    else if (tab === 'permissions') loadPermissions();
+    else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
+    if (tab !== 'logs') stopLogRefresh();
+}
+
+// ==================== BENUTZER ====================
+let userChipsCache = {};
+let currentYubikeyUserId = null;
+
+async function loadUsers() {
+    try {
+        const users = await api('/users/');
+        if (!users) return;
+        const tbody = document.getElementById('users-table');
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Keine Benutzer vorhanden</td></tr>';
+            return;
+        }
+        const [chipsResults, ykResults] = await Promise.all([
+            Promise.all(users.map(u => api('/users/' + u.id + '/chips').catch(() => []))),
+            Promise.all(users.map(u => api('/users/' + u.id + '/yubikeys').catch(() => []))),
+        ]);
+        userChipsCache = {};
+        users.forEach((u, i) => { userChipsCache[u.id] = chipsResults[i] || []; });
+
+        tbody.innerHTML = users.map((u, i) => {
+            const chips = chipsResults[i] || [];
+            const yks   = ykResults[i] || [];
+            const chipTags = chips.length > 0
+                ? chips.map(c => `<span class="chip-tag">${esc(c.chip_uid)}${c.label ? ' · ' + esc(c.label) : ''}</span>`).join(' ')
+                : '<span class="text-slate-300">&mdash;</span>';
+            const ykTags = yks.length > 0
+                ? yks.map(y => `<span class="chip-tag">&#x1F511; ${esc(y.public_id)}${y.label ? ' · ' + esc(y.label) : ''}</span>`).join(' ')
+                : '<span class="text-slate-300">&mdash;</span>';
+            const roleBadge = u.role === 'admin'
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Admin</span>'
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">User</span>';
+            return `<tr>
+                <td><code>${esc(u.id)}</code></td>
+                <td class="font-medium">${esc(u.username)}</td>
+                <td>${esc(u.display_name)}</td>
+                <td class="font-mono text-xs text-slate-500">${esc(u.phone_number) || '<span class="text-slate-300">&mdash;</span>'}</td>
+                <td><div class="chip-list">${chipTags}</div></td>
+                <td><div class="chip-list">${ykTags}</div></td>
+                <td>${roleBadge}</td>
+                <td class="actions">
+                    <button class="btn-sm btn-outline" onclick='editUser(${JSON.stringify(u)})'>Bearbeiten</button>
+                    <button class="btn-sm btn-outline" onclick="openChipsDialog('${esc(u.id)}','${esc(u.display_name)}')">NFC</button>
+                    <button class="btn-sm btn-outline" onclick="openYubikeysDialog('${esc(u.id)}','${esc(u.display_name)}')">YubiKey</button>
+                    <button class="btn-sm btn-danger" onclick="deleteUser('${esc(u.id)}')">L&ouml;schen</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch (e) { showError(e.message); }
+}
+
+function openUserDialog() {
+    document.getElementById('user-form').reset();
+    document.getElementById('user-edit-id').value = '';
+    document.getElementById('user-dialog-title').textContent = 'Neuer Benutzer';
+    ['user-id', 'user-keycloak-id', 'user-username', 'user-phone'].forEach(id => {
+        document.getElementById(id).disabled = false;
+    });
+    document.getElementById('user-dialog').showModal();
+}
+
+function editUser(user) {
+    document.getElementById('user-dialog-title').textContent = 'Benutzer bearbeiten';
+    document.getElementById('user-edit-id').value = user.id;
+    document.getElementById('user-id').value = user.id;
+    document.getElementById('user-keycloak-id').value = user.keycloak_id;
+    document.getElementById('user-username').value = user.username;
+    document.getElementById('user-display-name').value = user.display_name;
+    document.getElementById('user-phone').value = user.phone_number || '';
+    document.getElementById('user-role').value = user.role || 'user';
+    ['user-id', 'user-keycloak-id', 'user-username'].forEach(id => {
+        document.getElementById(id).disabled = true;
+    });
+    document.getElementById('user-phone').disabled = false;
+    document.getElementById('user-dialog').showModal();
+}
+
+async function saveUser(e) {
+    e.preventDefault();
+    const editId = document.getElementById('user-edit-id').value;
+    try {
+        if (editId) {
+            await api('/users/' + editId, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    display_name: document.getElementById('user-display-name').value,
+                    role: document.getElementById('user-role').value,
+                }),
             });
-
-            loadingMsg.textContent = 'Anmeldung wird geprüft…';
-            const authenticated = await keycloak.init({
-                onLoad: 'login-required',
-                checkLoginIframe: false,
-                pkceMethod: 'S256',
+        } else {
+            const phone = document.getElementById('user-phone').value.trim();
+            await api('/users/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    id: document.getElementById('user-id').value,
+                    keycloak_id: document.getElementById('user-keycloak-id').value,
+                    username: document.getElementById('user-username').value,
+                    display_name: document.getElementById('user-display-name').value,
+                    phone_number: phone || null,
+                    role: document.getElementById('user-role').value,
+                }),
             });
-
-            if (!authenticated) {
-                keycloak.login();
-                return;
-            }
-
-            // Token alle 30s aktualisieren
-            setInterval(() => {
-                keycloak.updateToken(60).catch(() => keycloak.login());
-            }, 30000);
-
-            document.getElementById('auth-username').textContent =
-                keycloak.tokenParsed?.preferred_username || '';
-            document.getElementById('loading-overlay').style.display = 'none';
-            document.getElementById('app').style.display = '';
-            loadUsers();
-        } catch (e) {
-            loadingMsg.textContent = 'Fehler: ' + e.message;
         }
-    }
+        document.getElementById('user-dialog').close();
+        showSuccess('Benutzer gespeichert');
+        loadUsers();
+    } catch (e) { showError(e.message); }
+}
 
-    function logout() {
-        keycloak.logout();
-    }
-
-    // ==================== API HELPER ====================
-    async function api(path, options = {}) {
-        const token = keycloak?.token;
-        const res = await fetch(API + path, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': 'Bearer ' + token } : {}),
-                ...options.headers,
-            },
-            ...options,
-        });
-        if (res.status === 401) {
-            try { await keycloak?.updateToken(-1); } catch { keycloak?.login(); return; }
-            return api(path, options);
-        }
-        if (res.status === 204) return null;
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || 'Fehler ' + res.status);
-        }
-        return res.json();
-    }
-
-    function showError(msg) { alert('Fehler: ' + msg); }
-
-    function esc(str) {
-        if (str == null) return '';
-        const div = document.createElement('div');
-        div.textContent = String(str);
-        return div.innerHTML;
-    }
-
-    function confirmAction(message, onConfirm) {
-        const dialog = document.getElementById('confirm-dialog');
-        document.getElementById('confirm-message').textContent = message;
-        const btn = document.getElementById('confirm-ok');
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-        newBtn.addEventListener('click', () => { dialog.close(); onConfirm(); });
-        dialog.showModal();
-    }
-
-    // ==================== TAB NAVIGATION ====================
-    function switchTab(tab, event) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('nav.tabs button').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-        if (event?.target) event.target.classList.add('active');
-
-        if (tab === 'users') loadUsers();
-        else if (tab === 'rooms') loadRooms();
-        else if (tab === 'permissions') loadPermissions();
-        else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
-
-        if (tab !== 'logs') stopLogRefresh();
-    }
-
-    // ==================== BENUTZER ====================
-    let userChipsCache = {};
-    let currentYubikeyUserId = null;
-
-    async function loadUsers() {
+function deleteUser(userId) {
+    confirmAction(`Benutzer "${userId}" wirklich deaktivieren?`, async () => {
         try {
-            const users = await api('/users/');
-            if (!users) return;
-            const tbody = document.getElementById('users-table');
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Keine Benutzer vorhanden</td></tr>';
-                return;
-            }
-            const [chipsResults, ykResults] = await Promise.all([
-                Promise.all(users.map(u => api('/users/' + u.id + '/chips').catch(() => []))),
-                Promise.all(users.map(u => api('/users/' + u.id + '/yubikeys').catch(() => []))),
-            ]);
-            userChipsCache = {};
-            users.forEach((u, i) => { userChipsCache[u.id] = chipsResults[i] || []; });
-
-            tbody.innerHTML = users.map((u, i) => {
-                const chips = chipsResults[i] || [];
-                const yks   = ykResults[i] || [];
-                const chipTags = chips.length > 0
-                    ? chips.map(c => `<span class="chip-tag">${esc(c.chip_uid)}${c.label ? ' (' + esc(c.label) + ')' : ''}</span>`).join(' ')
-                    : '&mdash;';
-                const ykTags = yks.length > 0
-                    ? yks.map(y => `<span class="chip-tag">🔑 ${esc(y.public_id)}${y.label ? ' (' + esc(y.label) + ')' : ''}</span>`).join(' ')
-                    : '&mdash;';
-                return `<tr>
-                    <td>${esc(u.id)}</td>
-                    <td>${esc(u.username)}</td>
-                    <td>${esc(u.display_name)}</td>
-                    <td>${esc(u.phone_number) || '&mdash;'}</td>
-                    <td><div class="chip-list">${chipTags}</div></td>
-                    <td><div class="chip-list">${ykTags}</div></td>
-                    <td>${esc(u.role)}</td>
-                    <td class="actions">
-                        <button class="outline" onclick='editUser(${JSON.stringify(u)})'>Bearbeiten</button>
-                        <button class="outline" onclick="openChipsDialog('${esc(u.id)}','${esc(u.display_name)}')">NFC</button>
-                        <button class="outline" onclick="openYubikeysDialog('${esc(u.id)}','${esc(u.display_name)}')">YubiKey</button>
-                        <button class="outline contrast" onclick="deleteUser('${esc(u.id)}')">L&ouml;schen</button>
-                    </td>
-                </tr>`;
-            }).join('');
-        } catch (e) { showError(e.message); }
-    }
-
-    function openUserDialog() {
-        document.getElementById('user-form').reset();
-        document.getElementById('user-edit-id').value = '';
-        document.getElementById('user-dialog-title').textContent = 'Neuer Benutzer';
-        ['user-id', 'user-keycloak-id', 'user-username', 'user-phone'].forEach(id => {
-            document.getElementById(id).disabled = false;
-        });
-        document.getElementById('user-dialog').showModal();
-    }
-
-    function editUser(user) {
-        document.getElementById('user-dialog-title').textContent = 'Benutzer bearbeiten';
-        document.getElementById('user-edit-id').value = user.id;
-        document.getElementById('user-id').value = user.id;
-        document.getElementById('user-keycloak-id').value = user.keycloak_id;
-        document.getElementById('user-username').value = user.username;
-        document.getElementById('user-display-name').value = user.display_name;
-        document.getElementById('user-phone').value = user.phone_number || '';
-        document.getElementById('user-role').value = user.role || 'user';
-        ['user-id', 'user-keycloak-id', 'user-username'].forEach(id => {
-            document.getElementById(id).disabled = true;
-        });
-        document.getElementById('user-phone').disabled = false;
-        document.getElementById('user-dialog').showModal();
-    }
-
-    async function saveUser(e) {
-        e.preventDefault();
-        const editId = document.getElementById('user-edit-id').value;
-        try {
-            if (editId) {
-                await api('/users/' + editId, {
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                        display_name: document.getElementById('user-display-name').value,
-                        role: document.getElementById('user-role').value,
-                    }),
-                });
-            } else {
-                const phone = document.getElementById('user-phone').value.trim();
-                await api('/users/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        id: document.getElementById('user-id').value,
-                        keycloak_id: document.getElementById('user-keycloak-id').value,
-                        username: document.getElementById('user-username').value,
-                        display_name: document.getElementById('user-display-name').value,
-                        phone_number: phone || null,
-                        role: document.getElementById('user-role').value,
-                    }),
-                });
-            }
-            document.getElementById('user-dialog').close();
+            await api('/users/' + userId, { method: 'DELETE' });
+            showSuccess('Benutzer deaktiviert');
             loadUsers();
         } catch (e) { showError(e.message); }
-    }
+    });
+}
 
-    function deleteUser(userId) {
-        confirmAction(`Benutzer "${userId}" wirklich deaktivieren?`, async () => {
-            try {
-                await api('/users/' + userId, { method: 'DELETE' });
-                loadUsers();
-            } catch (e) { showError(e.message); }
+// ==================== NFC CHIPS ====================
+async function openChipsDialog(userId, displayName) {
+    currentChipsUserId = userId;
+    document.getElementById('chips-dialog-title').textContent = 'NFC Chips – ' + displayName;
+    document.getElementById('chip-new-uid').value = '';
+    document.getElementById('chip-new-label').value = '';
+    document.getElementById('chips-dialog').showModal();
+    await loadChips();
+}
+
+async function loadChips() {
+    if (!currentChipsUserId) return;
+    try {
+        const chips = await api('/users/' + currentChipsUserId + '/chips');
+        if (!chips) return;
+        const tbody = document.getElementById('chips-table');
+        if (chips.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine Chips registriert</td></tr>';
+            return;
+        }
+        tbody.innerHTML = chips.map(c => `<tr>
+            <td><code>${esc(c.chip_uid)}</code></td>
+            <td>${esc(c.label) || '<span class="text-slate-300">&mdash;</span>'}</td>
+            <td class="text-slate-500">${new Date(c.created_at).toLocaleString('de-DE')}</td>
+            <td>
+                <button class="btn-sm btn-danger" onclick="removeChip(${c.id})">Entfernen</button>
+            </td>
+        </tr>`).join('');
+    } catch (e) { showError(e.message); }
+}
+
+async function addChip() {
+    const uid   = document.getElementById('chip-new-uid').value.trim();
+    const label = document.getElementById('chip-new-label').value.trim();
+    if (!uid) { showError('Chip-UID ist erforderlich'); return; }
+    try {
+        await api('/users/' + currentChipsUserId + '/chips', {
+            method: 'POST',
+            body: JSON.stringify({ chip_uid: uid, label: label || null }),
         });
-    }
-
-    // ==================== NFC CHIPS ====================
-    async function openChipsDialog(userId, displayName) {
-        currentChipsUserId = userId;
-        document.getElementById('chips-dialog-title').textContent = 'NFC Chips – ' + displayName;
         document.getElementById('chip-new-uid').value = '';
         document.getElementById('chip-new-label').value = '';
-        document.getElementById('chips-dialog').showModal();
+        showSuccess('Chip hinzugefügt');
         await loadChips();
-    }
+        loadUsers();
+    } catch (e) { showError(e.message); }
+}
 
-    async function loadChips() {
-        if (!currentChipsUserId) return;
+function removeChip(chipId) {
+    confirmAction('NFC Chip wirklich entfernen?', async () => {
         try {
-            const chips = await api('/users/' + currentChipsUserId + '/chips');
-            if (!chips) return;
-            const tbody = document.getElementById('chips-table');
-            if (chips.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine Chips registriert</td></tr>';
-                return;
-            }
-            tbody.innerHTML = chips.map(c => `<tr>
-                <td><code>${esc(c.chip_uid)}</code></td>
-                <td>${esc(c.label) || '&mdash;'}</td>
-                <td>${new Date(c.created_at).toLocaleString('de-DE')}</td>
-                <td>
-                    <button class="outline contrast" style="padding:0.2rem 0.4rem;font-size:0.8rem;margin:0"
-                        onclick="removeChip(${c.id})">Entfernen</button>
-                </td>
-            </tr>`).join('');
-        } catch (e) { showError(e.message); }
-    }
-
-    async function addChip() {
-        const uid = document.getElementById('chip-new-uid').value.trim();
-        const label = document.getElementById('chip-new-label').value.trim();
-        if (!uid) { showError('Chip-UID ist erforderlich'); return; }
-        try {
-            await api('/users/' + currentChipsUserId + '/chips', {
-                method: 'POST',
-                body: JSON.stringify({ chip_uid: uid, label: label || null }),
-            });
-            document.getElementById('chip-new-uid').value = '';
-            document.getElementById('chip-new-label').value = '';
+            await api('/users/' + currentChipsUserId + '/chips/' + chipId, { method: 'DELETE' });
+            showSuccess('Chip entfernt');
             await loadChips();
             loadUsers();
         } catch (e) { showError(e.message); }
-    }
+    });
+}
 
-    function removeChip(chipId) {
-        confirmAction('NFC Chip wirklich entfernen?', async () => {
-            try {
-                await api('/users/' + currentChipsUserId + '/chips/' + chipId, { method: 'DELETE' });
-                await loadChips();
-                loadUsers();
-            } catch (e) { showError(e.message); }
+// ==================== YUBIKEYS ====================
+async function openYubikeysDialog(userId, displayName) {
+    currentYubikeyUserId = userId;
+    document.getElementById('yubikeys-dialog-title').textContent = 'YubiKeys – ' + displayName;
+    document.getElementById('yk-new-otp').value = '';
+    document.getElementById('yk-new-label').value = '';
+    document.getElementById('yubikeys-dialog').showModal();
+    await loadYubikeys();
+}
+
+async function loadYubikeys() {
+    if (!currentYubikeyUserId) return;
+    try {
+        const yks = await api('/users/' + currentYubikeyUserId + '/yubikeys');
+        if (!yks) return;
+        const tbody = document.getElementById('yubikeys-table');
+        if (yks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine YubiKeys registriert</td></tr>';
+            return;
+        }
+        tbody.innerHTML = yks.map(y => `<tr>
+            <td><code>${esc(y.public_id)}</code></td>
+            <td>${esc(y.label) || '<span class="text-slate-300">&mdash;</span>'}</td>
+            <td class="text-slate-500">${new Date(y.created_at).toLocaleString('de-DE')}</td>
+            <td>
+                <button class="btn-sm btn-danger" onclick="removeYubikey(${y.id})">Entfernen</button>
+            </td>
+        </tr>`).join('');
+    } catch (e) { showError(e.message); }
+}
+
+async function addYubikey() {
+    const otp   = document.getElementById('yk-new-otp').value.trim();
+    const label = document.getElementById('yk-new-label').value.trim();
+    if (!otp) { showError('OTP oder Public-ID ist erforderlich'); return; }
+    try {
+        await api('/users/' + currentYubikeyUserId + '/yubikeys', {
+            method: 'POST',
+            body: JSON.stringify({ otp_or_public_id: otp, label: label || null }),
         });
-    }
-
-    // ==================== YUBIKEYS ====================
-    async function openYubikeysDialog(userId, displayName) {
-        currentYubikeyUserId = userId;
-        document.getElementById('yubikeys-dialog-title').textContent = 'YubiKeys – ' + displayName;
         document.getElementById('yk-new-otp').value = '';
         document.getElementById('yk-new-label').value = '';
-        document.getElementById('yubikeys-dialog').showModal();
+        showSuccess('YubiKey hinzugefügt');
         await loadYubikeys();
-    }
+        loadUsers();
+    } catch (e) { showError(e.message); }
+}
 
-    async function loadYubikeys() {
-        if (!currentYubikeyUserId) return;
+function removeYubikey(ykId) {
+    confirmAction('YubiKey wirklich entfernen?', async () => {
         try {
-            const yks = await api('/users/' + currentYubikeyUserId + '/yubikeys');
-            if (!yks) return;
-            const tbody = document.getElementById('yubikeys-table');
-            if (yks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine YubiKeys registriert</td></tr>';
-                return;
-            }
-            tbody.innerHTML = yks.map(y => `<tr>
-                <td><code>${esc(y.public_id)}</code></td>
-                <td>${esc(y.label) || '&mdash;'}</td>
-                <td>${new Date(y.created_at).toLocaleString('de-DE')}</td>
-                <td>
-                    <button class="outline contrast" style="padding:0.2rem 0.4rem;font-size:0.8rem;margin:0"
-                        onclick="removeYubikey(${y.id})">Entfernen</button>
-                </td>
-            </tr>`).join('');
-        } catch (e) { showError(e.message); }
-    }
-
-    async function addYubikey() {
-        const otp   = document.getElementById('yk-new-otp').value.trim();
-        const label = document.getElementById('yk-new-label').value.trim();
-        if (!otp) { showError('OTP oder Public-ID ist erforderlich'); return; }
-        try {
-            await api('/users/' + currentYubikeyUserId + '/yubikeys', {
-                method: 'POST',
-                body: JSON.stringify({ otp_or_public_id: otp, label: label || null }),
-            });
-            document.getElementById('yk-new-otp').value = '';
-            document.getElementById('yk-new-label').value = '';
+            await api('/users/' + currentYubikeyUserId + '/yubikeys/' + ykId, { method: 'DELETE' });
+            showSuccess('YubiKey entfernt');
             await loadYubikeys();
             loadUsers();
         } catch (e) { showError(e.message); }
-    }
+    });
+}
 
-    function removeYubikey(ykId) {
-        confirmAction('YubiKey wirklich entfernen?', async () => {
-            try {
-                await api('/users/' + currentYubikeyUserId + '/yubikeys/' + ykId, { method: 'DELETE' });
-                await loadYubikeys();
-                loadUsers();
-            } catch (e) { showError(e.message); }
-        });
-    }
+// ==================== RÄUME ====================
+async function loadRooms() {
+    try {
+        const rooms = await api('/rooms/');
+        if (!rooms) return;
+        const tbody = document.getElementById('rooms-table');
+        if (rooms.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Räume vorhanden</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rooms.map(r => `<tr>
+            <td><code>${esc(r.id)}</code></td>
+            <td class="font-medium">${esc(r.name)}</td>
+            <td class="text-slate-500">${esc(r.description) || '<span class="text-slate-300">&mdash;</span>'}</td>
+            <td class="font-mono text-xs text-slate-500">${esc(r.zigbee_lock_id) || '<span class="text-slate-300">&mdash;</span>'}</td>
+            <td class="actions">
+                <button class="btn-sm btn-outline" onclick='editRoom(${JSON.stringify(r)})'>Bearbeiten</button>
+                <button class="btn-sm btn-danger" onclick="deleteRoom('${esc(r.id)}')">Löschen</button>
+            </td>
+        </tr>`).join('');
+    } catch (e) { showError(e.message); }
+}
 
-    // ==================== RÄUME ====================
-    async function loadRooms() {
-        try {
-            const rooms = await api('/rooms/');
-            if (!rooms) return;
-            const tbody = document.getElementById('rooms-table');
-            if (rooms.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine R&auml;ume vorhanden</td></tr>';
-                return;
-            }
-            tbody.innerHTML = rooms.map(r => `<tr>
-                <td>${esc(r.id)}</td>
-                <td>${esc(r.name)}</td>
-                <td>${esc(r.description) || '&mdash;'}</td>
-                <td>${esc(r.zigbee_lock_id) || '&mdash;'}</td>
-                <td class="actions">
-                    <button class="outline" onclick='editRoom(${JSON.stringify(r)})'>Bearbeiten</button>
-                    <button class="outline contrast" onclick="deleteRoom('${esc(r.id)}')">L&ouml;schen</button>
-                </td>
-            </tr>`).join('');
-        } catch (e) { showError(e.message); }
-    }
+function openRoomDialog() {
+    document.getElementById('room-form').reset();
+    document.getElementById('room-edit-id').value = '';
+    document.getElementById('room-dialog-title').textContent = 'Neuer Raum';
+    document.getElementById('room-id').disabled = false;
+    document.getElementById('room-dialog').showModal();
+}
 
-    function openRoomDialog() {
-        document.getElementById('room-form').reset();
-        document.getElementById('room-edit-id').value = '';
-        document.getElementById('room-dialog-title').textContent = 'Neuer Raum';
-        document.getElementById('room-id').disabled = false;
-        document.getElementById('room-dialog').showModal();
-    }
+function editRoom(room) {
+    document.getElementById('room-dialog-title').textContent = 'Raum bearbeiten';
+    document.getElementById('room-edit-id').value = room.id;
+    document.getElementById('room-id').value = room.id;
+    document.getElementById('room-id').disabled = true;
+    document.getElementById('room-name').value = room.name;
+    document.getElementById('room-description').value = room.description || '';
+    document.getElementById('room-zigbee').value = room.zigbee_lock_id || '';
+    document.getElementById('room-dialog').showModal();
+}
 
-    function editRoom(room) {
-        document.getElementById('room-dialog-title').textContent = 'Raum bearbeiten';
-        document.getElementById('room-edit-id').value = room.id;
-        document.getElementById('room-id').value = room.id;
-        document.getElementById('room-id').disabled = true;
-        document.getElementById('room-name').value = room.name;
-        document.getElementById('room-description').value = room.description || '';
-        document.getElementById('room-zigbee').value = room.zigbee_lock_id || '';
-        document.getElementById('room-dialog').showModal();
-    }
-
-    async function saveRoom(e) {
-        e.preventDefault();
-        const editId = document.getElementById('room-edit-id').value;
-        try {
-            if (editId) {
-                await api('/rooms/' + editId, {
-                    method: 'PATCH',
-                    body: JSON.stringify({
-                        name: document.getElementById('room-name').value,
-                        description: document.getElementById('room-description').value || null,
-                        zigbee_lock_id: document.getElementById('room-zigbee').value || null,
-                    }),
-                });
-            } else {
-                await api('/rooms/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        id: document.getElementById('room-id').value,
-                        name: document.getElementById('room-name').value,
-                        description: document.getElementById('room-description').value || null,
-                        zigbee_lock_id: document.getElementById('room-zigbee').value || null,
-                    }),
-                });
-            }
-            document.getElementById('room-dialog').close();
-            loadRooms();
-        } catch (e) { showError(e.message); }
-    }
-
-    function deleteRoom(roomId) {
-        confirmAction(`Raum "${roomId}" wirklich deaktivieren?`, async () => {
-            try {
-                await api('/rooms/' + roomId, { method: 'DELETE' });
-                loadRooms();
-            } catch (e) { showError(e.message); }
-        });
-    }
-
-    // ==================== BERECHTIGUNGEN ====================
-    async function loadPermissions() {
-        try {
-            const perms = await api('/permissions/');
-            if (!perms) return;
-            const tbody = document.getElementById('permissions-table');
-            if (perms.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Berechtigungen vorhanden</td></tr>';
-                return;
-            }
-            tbody.innerHTML = perms.map(p => `<tr>
-                <td>${p.id}</td>
-                <td>${esc(p.user_id)}</td>
-                <td>${esc(p.room_id)}</td>
-                <td>${esc(p.access_level)}</td>
-                <td class="actions">
-                    <button class="outline contrast" onclick="deletePermission(${p.id})">Entfernen</button>
-                </td>
-            </tr>`).join('');
-        } catch (e) { showError(e.message); }
-    }
-
-    async function openPermissionDialog() {
-        try {
-            const [users, rooms] = await Promise.all([api('/users/'), api('/rooms/')]);
-            if (!users || !rooms) return;
-            document.getElementById('perm-user-id').innerHTML =
-                users.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)} (${esc(u.id)})</option>`).join('');
-            document.getElementById('perm-room-id').innerHTML =
-                rooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)} (${esc(r.id)})</option>`).join('');
-            document.getElementById('permission-form').reset();
-            document.getElementById('permission-dialog').showModal();
-        } catch (e) { showError(e.message); }
-    }
-
-    async function savePermission(e) {
-        e.preventDefault();
-        try {
-            await api('/permissions/', {
-                method: 'POST',
+async function saveRoom(e) {
+    e.preventDefault();
+    const editId = document.getElementById('room-edit-id').value;
+    try {
+        if (editId) {
+            await api('/rooms/' + editId, {
+                method: 'PATCH',
                 body: JSON.stringify({
-                    user_id: document.getElementById('perm-user-id').value,
-                    room_id: document.getElementById('perm-room-id').value,
-                    access_level: document.getElementById('perm-access-level').value,
+                    name: document.getElementById('room-name').value,
+                    description: document.getElementById('room-description').value || null,
+                    zigbee_lock_id: document.getElementById('room-zigbee').value || null,
                 }),
             });
-            document.getElementById('permission-dialog').close();
+        } else {
+            await api('/rooms/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    id: document.getElementById('room-id').value,
+                    name: document.getElementById('room-name').value,
+                    description: document.getElementById('room-description').value || null,
+                    zigbee_lock_id: document.getElementById('room-zigbee').value || null,
+                }),
+            });
+        }
+        document.getElementById('room-dialog').close();
+        showSuccess('Raum gespeichert');
+        loadRooms();
+    } catch (e) { showError(e.message); }
+}
+
+function deleteRoom(roomId) {
+    confirmAction(`Raum "${roomId}" wirklich deaktivieren?`, async () => {
+        try {
+            await api('/rooms/' + roomId, { method: 'DELETE' });
+            showSuccess('Raum deaktiviert');
+            loadRooms();
+        } catch (e) { showError(e.message); }
+    });
+}
+
+// ==================== BERECHTIGUNGEN ====================
+async function loadPermissions() {
+    try {
+        const perms = await api('/permissions/');
+        if (!perms) return;
+        const tbody = document.getElementById('permissions-table');
+        if (perms.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Keine Berechtigungen vorhanden</td></tr>';
+            return;
+        }
+        const levelBadge = l => ({
+            admin: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Admin</span>',
+            write: '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Schreiben</span>',
+            read:  '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Lesen</span>',
+        }[l] || esc(l));
+        tbody.innerHTML = perms.map(p => `<tr>
+            <td class="text-slate-400 text-xs">${p.id}</td>
+            <td><code>${esc(p.user_id)}</code></td>
+            <td><code>${esc(p.room_id)}</code></td>
+            <td>${levelBadge(p.access_level)}</td>
+            <td class="actions">
+                <button class="btn-sm btn-danger" onclick="deletePermission(${p.id})">Entfernen</button>
+            </td>
+        </tr>`).join('');
+    } catch (e) { showError(e.message); }
+}
+
+async function openPermissionDialog() {
+    try {
+        const [users, rooms] = await Promise.all([api('/users/'), api('/rooms/')]);
+        if (!users || !rooms) return;
+        document.getElementById('perm-user-id').innerHTML =
+            users.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)} (${esc(u.id)})</option>`).join('');
+        document.getElementById('perm-room-id').innerHTML =
+            rooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)} (${esc(r.id)})</option>`).join('');
+        document.getElementById('permission-form').reset();
+        document.getElementById('permission-dialog').showModal();
+    } catch (e) { showError(e.message); }
+}
+
+async function savePermission(e) {
+    e.preventDefault();
+    try {
+        await api('/permissions/', {
+            method: 'POST',
+            body: JSON.stringify({
+                user_id: document.getElementById('perm-user-id').value,
+                room_id: document.getElementById('perm-room-id').value,
+                access_level: document.getElementById('perm-access-level').value,
+            }),
+        });
+        document.getElementById('permission-dialog').close();
+        showSuccess('Berechtigung erstellt');
+        loadPermissions();
+    } catch (e) { showError(e.message); }
+}
+
+function deletePermission(permId) {
+    confirmAction('Berechtigung wirklich entfernen?', async () => {
+        try {
+            await api('/permissions/' + permId, { method: 'DELETE' });
+            showSuccess('Berechtigung entfernt');
             loadPermissions();
         } catch (e) { showError(e.message); }
-    }
+    });
+}
 
-    function deletePermission(permId) {
-        confirmAction('Berechtigung wirklich entfernen?', async () => {
-            try {
-                await api('/permissions/' + permId, { method: 'DELETE' });
-                loadPermissions();
-            } catch (e) { showError(e.message); }
-        });
-    }
-
-    // ==================== PROTOKOLL ====================
-    async function loadLogs() {
-        try {
-            const params = new URLSearchParams();
-            const userId = document.getElementById('log-filter-user').value;
-            const roomId = document.getElementById('log-filter-room').value;
-            const limit  = document.getElementById('log-filter-limit').value || 50;
-            if (userId) params.set('user_id', userId);
-            if (roomId) params.set('room_id', roomId);
-            params.set('limit', limit);
-
-            const logs = await api('/access/logs?' + params.toString());
-            if (!logs) return;
-            const tbody = document.getElementById('logs-table');
-            if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Keine Protokolleintr&auml;ge</td></tr>';
-                return;
-            }
-            tbody.innerHTML = logs.map(l => {
-                const badge = l.granted
-                    ? '<span class="status-badge status-granted">Gew&auml;hrt</span>'
-                    : '<span class="status-badge status-denied">Verweigert</span>';
-                return `<tr>
-                    <td>${l.id}</td>
-                    <td>${new Date(l.timestamp).toLocaleString('de-DE')}</td>
-                    <td>${esc(l.user_id) || '&mdash;'}</td>
-                    <td>${esc(l.room_id) || '&mdash;'}</td>
-                    <td>${badge}</td>
-                    <td>${esc(l.reason) || '&mdash;'}</td>
-                    <td>${esc(l.device_id) || '&mdash;'}</td>
-                    <td>${esc(l.nfc_chip_id) || '&mdash;'}</td>
-                </tr>`;
-            }).join('');
-        } catch (e) { showError(e.message); }
-    }
-
-    function exportLogs() {
+// ==================== PROTOKOLL ====================
+async function loadLogs() {
+    try {
         const params = new URLSearchParams();
         const userId = document.getElementById('log-filter-user').value;
         const roomId = document.getElementById('log-filter-room').value;
+        const limit  = document.getElementById('log-filter-limit').value || 50;
         if (userId) params.set('user_id', userId);
         if (roomId) params.set('room_id', roomId);
-        params.set('limit', 10000);
+        params.set('limit', limit);
 
-        const url = API + '/access/logs/export?' + params.toString();
-        const a = document.createElement('a');
-        a.href = url;
-        a.setAttribute('download', 'zugangsprotokoll.csv');
-        // Token als Query-Parameter ist unsicher – stattdessen fetch + Blob
-        fetch(url, { headers: { 'Authorization': 'Bearer ' + keycloak?.token } })
-            .then(r => r.blob())
-            .then(blob => {
-                a.href = URL.createObjectURL(blob);
-                a.click();
-                URL.revokeObjectURL(a.href);
-            })
-            .catch(e => showError(e.message));
-    }
-
-    function startLogRefresh() {
-        stopLogRefresh();
-        if (document.getElementById('log-auto-refresh').checked)
-            logRefreshInterval = setInterval(loadLogs, 5000);
-    }
-
-    function stopLogRefresh() {
-        if (logRefreshInterval) { clearInterval(logRefreshInterval); logRefreshInterval = null; }
-    }
-
-    document.getElementById('log-auto-refresh').addEventListener('change', e => {
-        if (e.target.checked) startLogRefresh(); else stopLogRefresh();
-    });
-
-    // ==================== ZUGANGSKONTROLLE ====================
-    async function verifyAccess() {
-        const userId = document.getElementById('verify-user-id').value;
-        const roomId = document.getElementById('verify-room-id').value;
-        const resultDiv = document.getElementById('verify-result');
-        if (!userId || !roomId) { resultDiv.innerHTML = '<p>Bitte Benutzer-ID und Raum-ID eingeben.</p>'; return; }
-        try {
-            const res = await api('/access/verify', {
-                method: 'POST',
-                body: JSON.stringify({ user_id: userId, room_id: roomId }),
-            });
-            if (!res) return;
-            const cls = res.granted ? 'verify-granted' : 'verify-denied';
-            resultDiv.innerHTML = `<div class="verify-result ${cls}">
-                <strong>${res.granted ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
-                Benutzer: ${esc(res.user_id)}<br>Raum: ${esc(res.room_id)}<br>
-                ${res.reason ? 'Grund: ' + esc(res.reason) + '<br>' : ''}
-                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
-            </div>`;
-        } catch (e) {
-            document.getElementById('verify-result').innerHTML =
-                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+        const logs = await api('/access/logs?' + params.toString());
+        if (!logs) return;
+        const tbody = document.getElementById('logs-table');
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Keine Protokolleinträge</td></tr>';
+            return;
         }
-    }
+        tbody.innerHTML = logs.map(l => {
+            const badge = l.granted
+                ? '<span class="status-badge status-granted">Gewährt</span>'
+                : '<span class="status-badge status-denied">Verweigert</span>';
+            return `<tr>
+                <td class="text-slate-400 text-xs">${l.id}</td>
+                <td class="text-slate-500 text-xs whitespace-nowrap">${new Date(l.timestamp).toLocaleString('de-DE')}</td>
+                <td><code>${esc(l.user_id) || '&mdash;'}</code></td>
+                <td><code>${esc(l.room_id) || '&mdash;'}</code></td>
+                <td>${badge}</td>
+                <td class="text-slate-500 text-xs max-w-xs truncate">${esc(l.reason) || '&mdash;'}</td>
+                <td class="font-mono text-xs text-slate-500">${esc(l.device_id) || '&mdash;'}</td>
+                <td class="font-mono text-xs text-slate-500">${esc(l.nfc_chip_id) || '&mdash;'}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) { showError(e.message); }
+}
 
-    async function verifyYubikey() {
-        const otp    = document.getElementById('verify-yubikey-otp').value.trim();
-        const roomId = document.getElementById('verify-yubikey-room').value.trim();
-        const resultDiv = document.getElementById('verify-yubikey-result');
-        if (!otp || !roomId) { resultDiv.innerHTML = '<p>Bitte OTP und Raum-ID eingeben.</p>'; return; }
-        try {
-            const res = await api('/access/yubikey/verify', {
-                method: 'POST',
-                body: JSON.stringify({ yubikey_otp: otp, room_id: roomId }),
-            });
-            if (!res) return;
-            const cls = res.access ? 'verify-granted' : 'verify-denied';
-            resultDiv.innerHTML = `<div class="verify-result ${cls}">
-                <strong>${res.access ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
-                ${esc(res.message)}<br>
-                ${res.user_id   ? 'Benutzer: ' + esc(res.user_id)   + '<br>' : ''}
-                ${res.user_name ? 'Name: '     + esc(res.user_name) + '<br>' : ''}
-                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
-            </div>`;
-        } catch (e) {
-            document.getElementById('verify-yubikey-result').innerHTML =
-                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
-        }
-    }
+function exportLogs() {
+    const params = new URLSearchParams();
+    const userId = document.getElementById('log-filter-user').value;
+    const roomId = document.getElementById('log-filter-room').value;
+    if (userId) params.set('user_id', userId);
+    if (roomId) params.set('room_id', roomId);
+    params.set('limit', 10000);
+    const url = API + '/access/logs/export?' + params.toString();
+    fetch(url, { headers: { 'Authorization': 'Bearer ' + keycloak?.token } })
+        .then(r => r.blob())
+        .then(blob => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'zugangsprotokoll.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        })
+        .catch(e => showError(e.message));
+}
 
-    async function verifyCard() {
-        const cardUid  = document.getElementById('verify-card-uid').value;
-        const deviceId = document.getElementById('verify-device-id').value;
-        const roomId   = document.getElementById('verify-card-room').value;
-        const resultDiv = document.getElementById('verify-card-result');
-        if (!cardUid || !deviceId || !roomId) { resultDiv.innerHTML = '<p>Bitte alle Felder ausf&uuml;llen.</p>'; return; }
-        try {
-            const res = await api('/access/verify-card', {
-                method: 'POST',
-                body: JSON.stringify({ card_uid: cardUid, device_id: deviceId, room_id: roomId }),
-            });
-            if (!res) return;
-            const cls = res.access ? 'verify-granted' : 'verify-denied';
-            resultDiv.innerHTML = `<div class="verify-result ${cls}">
-                <strong>${res.access ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
-                ${esc(res.message)}<br>
-                ${res.user_id ? 'Benutzer: ' + esc(res.user_id) + '<br>' : ''}
-                ${res.user_name ? 'Name: ' + esc(res.user_name) + '<br>' : ''}
-                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
-            </div>`;
-        } catch (e) {
-            document.getElementById('verify-card-result').innerHTML =
-                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
-        }
-    }
+function startLogRefresh() {
+    stopLogRefresh();
+    if (document.getElementById('log-auto-refresh').checked)
+        logRefreshInterval = setInterval(loadLogs, 5000);
+}
 
-    // ==================== INIT ====================
-    initAuth();
-    </script>
+function stopLogRefresh() {
+    if (logRefreshInterval) { clearInterval(logRefreshInterval); logRefreshInterval = null; }
+}
+
+document.getElementById('log-auto-refresh').addEventListener('change', e => {
+    if (e.target.checked) startLogRefresh(); else stopLogRefresh();
+});
+
+// ==================== ZUGANGSKONTROLLE ====================
+async function verifyAccess() {
+    const userId = document.getElementById('verify-user-id').value;
+    const roomId = document.getElementById('verify-room-id').value;
+    const resultDiv = document.getElementById('verify-result');
+    if (!userId || !roomId) { resultDiv.innerHTML = '<p class="text-sm text-slate-500 mt-3">Bitte alle Felder ausfüllen.</p>'; return; }
+    try {
+        const res = await api('/access/verify', { method: 'POST', body: JSON.stringify({ user_id: userId, room_id: roomId }) });
+        if (!res) return;
+        const cls = res.granted ? 'verify-granted' : 'verify-denied';
+        resultDiv.innerHTML = `<div class="verify-result ${cls}">
+            <strong>${res.granted ? '✓ Zugang gewährt' : '✕ Zugang verweigert'}</strong><br>
+            Benutzer: ${esc(res.user_id)} &middot; Raum: ${esc(res.room_id)}<br>
+            ${res.reason ? 'Grund: ' + esc(res.reason) + '<br>' : ''}
+            Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+        </div>`;
+    } catch (e) {
+        document.getElementById('verify-result').innerHTML =
+            `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+    }
+}
+
+async function verifyYubikey() {
+    const otp    = document.getElementById('verify-yubikey-otp').value.trim();
+    const roomId = document.getElementById('verify-yubikey-room').value.trim();
+    const resultDiv = document.getElementById('verify-yubikey-result');
+    if (!otp || !roomId) { resultDiv.innerHTML = '<p class="text-sm text-slate-500 mt-3">Bitte alle Felder ausfüllen.</p>'; return; }
+    try {
+        const res = await api('/access/yubikey/verify', { method: 'POST', body: JSON.stringify({ yubikey_otp: otp, room_id: roomId }) });
+        if (!res) return;
+        const cls = res.access ? 'verify-granted' : 'verify-denied';
+        resultDiv.innerHTML = `<div class="verify-result ${cls}">
+            <strong>${res.access ? '✓ Zugang gewährt' : '✕ Zugang verweigert'}</strong><br>
+            ${esc(res.message)}<br>
+            ${res.user_id   ? 'Benutzer: ' + esc(res.user_id) + '<br>' : ''}
+            ${res.user_name ? 'Name: '     + esc(res.user_name) + '<br>' : ''}
+            Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+        </div>`;
+    } catch (e) {
+        document.getElementById('verify-yubikey-result').innerHTML =
+            `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+    }
+}
+
+async function verifyCard() {
+    const cardUid  = document.getElementById('verify-card-uid').value;
+    const deviceId = document.getElementById('verify-device-id').value;
+    const roomId   = document.getElementById('verify-card-room').value;
+    const resultDiv = document.getElementById('verify-card-result');
+    if (!cardUid || !deviceId || !roomId) { resultDiv.innerHTML = '<p class="text-sm text-slate-500 mt-3">Bitte alle Felder ausfüllen.</p>'; return; }
+    try {
+        const res = await api('/access/verify-card', { method: 'POST', body: JSON.stringify({ card_uid: cardUid, device_id: deviceId, room_id: roomId }) });
+        if (!res) return;
+        const cls = res.access ? 'verify-granted' : 'verify-denied';
+        resultDiv.innerHTML = `<div class="verify-result ${cls}">
+            <strong>${res.access ? '✓ Zugang gewährt' : '✕ Zugang verweigert'}</strong><br>
+            ${esc(res.message)}<br>
+            ${res.user_id   ? 'Benutzer: ' + esc(res.user_id) + '<br>' : ''}
+            ${res.user_name ? 'Name: '     + esc(res.user_name) + '<br>' : ''}
+            Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+        </div>`;
+    } catch (e) {
+        document.getElementById('verify-card-result').innerHTML =
+            `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+    }
+}
+
+// ==================== INIT ====================
+initAuth();
+</script>
 </body>
 </html>
