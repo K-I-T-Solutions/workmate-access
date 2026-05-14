@@ -160,6 +160,7 @@
                 <label>Raum-ID<input type="text" id="log-filter-room" placeholder="z.B. serverroom"></label>
                 <label>Limit<input type="number" id="log-filter-limit" value="50" min="1" max="500"></label>
                 <button onclick="loadLogs()">Filtern</button>
+                <button class="secondary outline" onclick="exportLogs()">CSV exportieren</button>
                 <label><input type="checkbox" id="log-auto-refresh" checked> Auto-Refresh (5s)</label>
             </div>
             <table>
@@ -749,6 +750,29 @@
                 </tr>`;
             }).join('');
         } catch (e) { showError(e.message); }
+    }
+
+    function exportLogs() {
+        const params = new URLSearchParams();
+        const userId = document.getElementById('log-filter-user').value;
+        const roomId = document.getElementById('log-filter-room').value;
+        if (userId) params.set('user_id', userId);
+        if (roomId) params.set('room_id', roomId);
+        params.set('limit', 10000);
+
+        const url = API + '/access/logs/export?' + params.toString();
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', 'zugangsprotokoll.csv');
+        // Token als Query-Parameter ist unsicher – stattdessen fetch + Blob
+        fetch(url, { headers: { 'Authorization': 'Bearer ' + keycloak?.token } })
+            .then(r => r.blob())
+            .then(blob => {
+                a.href = URL.createObjectURL(blob);
+                a.click();
+                URL.revokeObjectURL(a.href);
+            })
+            .catch(e => showError(e.message));
     }
 
     function startLogRefresh() {

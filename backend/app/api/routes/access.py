@@ -1,4 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from ...db.database import get_db
 from ...core.auth import TokenData, require_admin
@@ -90,6 +93,44 @@ def get_access_logs(
         query = query.filter(AccessLog.room_id == room_id)
     
     return query.order_by(AccessLog.timestamp.desc()).limit(limit).all()
+
+@router.get("/logs/export")
+def export_logs_csv(
+    user_id: str = None,
+    room_id: str = None,
+    limit: int = 10000,
+    db: Session = Depends(get_db),
+    _: TokenData = Depends(require_admin),
+):
+    """Zugangsprotokoll als CSV exportieren"""
+    query = db.query(AccessLog)
+    if user_id:
+        query = query.filter(AccessLog.user_id == user_id)
+    if room_id:
+        query = query.filter(AccessLog.room_id == room_id)
+    logs = query.order_by(AccessLog.timestamp.desc()).limit(limit).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "timestamp", "user_id", "room_id", "granted", "reason", "device_id", "nfc_chip_id"])
+    for l in logs:
+        writer.writerow([
+            l.id,
+            l.timestamp.isoformat() if l.timestamp else "",
+            l.user_id or "",
+            l.room_id or "",
+            "ja" if l.granted else "nein",
+            l.reason or "",
+            l.device_id or "",
+            l.nfc_chip_id or "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=zugangsprotokoll.csv"},
+    )
 
 @router.get("/logs/{user_id}", response_model=list[AccessLogResponse])
 def get_user_logs(
