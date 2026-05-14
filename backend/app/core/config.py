@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     OTP_VERIFY_MAX_ATTEMPTS: int = 10
     OTP_VERIFY_WINDOW_MINUTES: int = 15
 
+    # Yubico OTP (YubiCloud)
+    YUBICO_CLIENT_ID: str = ""
+    YUBICO_SECRET_KEY: str = ""  # Base64-kodierter HMAC-Schlüssel von https://upgrade.yubico.com/getapikey/
+
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",

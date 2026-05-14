@@ -18,7 +18,10 @@ from ...schemas.access import (
 )
 from ...services.access_service import AccessService
 from ...services.otp_service import OtpService
+from ...services.yubikey_service import verify_yubikey_access
 from ...models import AccessLog
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter(prefix="/api/v1/access", tags=["access"])
 
@@ -147,6 +150,21 @@ def get_user_logs(
         .limit(limit)
         .all()
     )
+
+
+class YubikeyVerifyRequest(BaseModel):
+    yubikey_otp: str
+    room_id: str
+    device_id: Optional[str] = None
+
+
+@router.post("/yubikey/verify", response_model=CardVerifyResponse)
+def verify_yubikey(request: YubikeyVerifyRequest, db: Session = Depends(get_db)):
+    """
+    Verifiziere Yubico OTP und prüfe Raum-Berechtigung.
+    Wird vom ESP32 aufgerufen nachdem der YubiKey NFC-OTP via NDEF gelesen wurde.
+    """
+    return verify_yubikey_access(db, request.yubikey_otp, request.room_id, request.device_id or "")
 
 
 @router.post("/otp/send", response_model=OtpSendResponse)

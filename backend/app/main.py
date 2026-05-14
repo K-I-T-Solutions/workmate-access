@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from .core.config import settings
 from .db.database import engine
 from .models import Base
-from .api.routes import access, rooms, users, permissions, nfc_chips
+from .api.routes import access, rooms, users, permissions, nfc_chips, yubikeys
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -34,6 +34,7 @@ app.include_router(rooms.router)
 app.include_router(users.router)
 app.include_router(permissions.router)
 app.include_router(nfc_chips.router)
+app.include_router(yubikeys.router)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

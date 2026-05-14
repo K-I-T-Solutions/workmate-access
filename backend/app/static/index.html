@@ -118,7 +118,7 @@
             <table>
                 <thead><tr>
                     <th>ID</th><th>Benutzername</th><th>Anzeigename</th>
-                    <th>Telefon</th><th>NFC Chips</th><th>Rolle</th><th>Aktionen</th>
+                    <th>Telefon</th><th>NFC Chips</th><th>YubiKeys</th><th>Rolle</th><th>Aktionen</th>
                 </tr></thead>
                 <tbody id="users-table"></tbody>
             </table>
@@ -184,6 +184,13 @@
                     <div id="verify-result"></div>
                 </article>
                 <article>
+                    <header>YubiKey pr&uuml;fen</header>
+                    <label>Yubico OTP (44 Zeichen)<input type="text" id="verify-yubikey-otp" placeholder="ccccccxxxxxx…" maxlength="44"></label>
+                    <label>Raum-ID<input type="text" id="verify-yubikey-room" placeholder="z.B. office_main"></label>
+                    <button onclick="verifyYubikey()">YubiKey pr&uuml;fen</button>
+                    <div id="verify-yubikey-result"></div>
+                </article>
+                <article>
                     <header>NFC-Karte pr&uuml;fen</header>
                     <label>Karten-UID<input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106"></label>
                     <label>Ger&auml;te-ID<input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01"></label>
@@ -237,6 +244,24 @@
             <table class="chip-table">
                 <thead><tr><th>UID</th><th>Label</th><th>Erstellt</th><th></th></tr></thead>
                 <tbody id="chips-table"></tbody>
+            </table>
+        </article>
+    </dialog>
+
+    <dialog id="yubikeys-dialog">
+        <article style="max-width:550px">
+            <header>
+                <button aria-label="Schlie&szlig;en" rel="prev" onclick="document.getElementById('yubikeys-dialog').close()"></button>
+                <h3 id="yubikeys-dialog-title">YubiKeys</h3>
+            </header>
+            <div class="chip-add-row">
+                <label style="flex:1;margin-bottom:0">OTP oder Public-ID<input type="text" id="yk-new-otp" placeholder="44-stelliger OTP oder 12-stellige ID"></label>
+                <label style="flex:1;margin-bottom:0">Label<input type="text" id="yk-new-label" placeholder="z.B. Büro-Key"></label>
+                <button onclick="addYubikey()" style="margin-bottom:0">Hinzuf&uuml;gen</button>
+            </div>
+            <table class="chip-table">
+                <thead><tr><th>Public-ID</th><th>Label</th><th>Erstellt</th><th></th></tr></thead>
+                <tbody id="yubikeys-table"></tbody>
             </table>
         </article>
     </dialog>
@@ -414,6 +439,7 @@
 
     // ==================== BENUTZER ====================
     let userChipsCache = {};
+    let currentYubikeyUserId = null;
 
     async function loadUsers() {
         try {
@@ -424,16 +450,21 @@
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Keine Benutzer vorhanden</td></tr>';
                 return;
             }
-            const chipsResults = await Promise.all(
-                users.map(u => api('/users/' + u.id + '/chips').catch(() => []))
-            );
+            const [chipsResults, ykResults] = await Promise.all([
+                Promise.all(users.map(u => api('/users/' + u.id + '/chips').catch(() => []))),
+                Promise.all(users.map(u => api('/users/' + u.id + '/yubikeys').catch(() => []))),
+            ]);
             userChipsCache = {};
             users.forEach((u, i) => { userChipsCache[u.id] = chipsResults[i] || []; });
 
-            tbody.innerHTML = users.map(u => {
-                const chips = userChipsCache[u.id] || [];
+            tbody.innerHTML = users.map((u, i) => {
+                const chips = chipsResults[i] || [];
+                const yks   = ykResults[i] || [];
                 const chipTags = chips.length > 0
                     ? chips.map(c => `<span class="chip-tag">${esc(c.chip_uid)}${c.label ? ' (' + esc(c.label) + ')' : ''}</span>`).join(' ')
+                    : '&mdash;';
+                const ykTags = yks.length > 0
+                    ? yks.map(y => `<span class="chip-tag">🔑 ${esc(y.public_id)}${y.label ? ' (' + esc(y.label) + ')' : ''}</span>`).join(' ')
                     : '&mdash;';
                 return `<tr>
                     <td>${esc(u.id)}</td>
@@ -441,10 +472,12 @@
                     <td>${esc(u.display_name)}</td>
                     <td>${esc(u.phone_number) || '&mdash;'}</td>
                     <td><div class="chip-list">${chipTags}</div></td>
+                    <td><div class="chip-list">${ykTags}</div></td>
                     <td>${esc(u.role)}</td>
                     <td class="actions">
                         <button class="outline" onclick='editUser(${JSON.stringify(u)})'>Bearbeiten</button>
                         <button class="outline" onclick="openChipsDialog('${esc(u.id)}','${esc(u.display_name)}')">NFC</button>
+                        <button class="outline" onclick="openYubikeysDialog('${esc(u.id)}','${esc(u.display_name)}')">YubiKey</button>
                         <button class="outline contrast" onclick="deleteUser('${esc(u.id)}')">L&ouml;schen</button>
                     </td>
                 </tr>`;
@@ -571,6 +604,64 @@
             try {
                 await api('/users/' + currentChipsUserId + '/chips/' + chipId, { method: 'DELETE' });
                 await loadChips();
+                loadUsers();
+            } catch (e) { showError(e.message); }
+        });
+    }
+
+    // ==================== YUBIKEYS ====================
+    async function openYubikeysDialog(userId, displayName) {
+        currentYubikeyUserId = userId;
+        document.getElementById('yubikeys-dialog-title').textContent = 'YubiKeys – ' + displayName;
+        document.getElementById('yk-new-otp').value = '';
+        document.getElementById('yk-new-label').value = '';
+        document.getElementById('yubikeys-dialog').showModal();
+        await loadYubikeys();
+    }
+
+    async function loadYubikeys() {
+        if (!currentYubikeyUserId) return;
+        try {
+            const yks = await api('/users/' + currentYubikeyUserId + '/yubikeys');
+            if (!yks) return;
+            const tbody = document.getElementById('yubikeys-table');
+            if (yks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Keine YubiKeys registriert</td></tr>';
+                return;
+            }
+            tbody.innerHTML = yks.map(y => `<tr>
+                <td><code>${esc(y.public_id)}</code></td>
+                <td>${esc(y.label) || '&mdash;'}</td>
+                <td>${new Date(y.created_at).toLocaleString('de-DE')}</td>
+                <td>
+                    <button class="outline contrast" style="padding:0.2rem 0.4rem;font-size:0.8rem;margin:0"
+                        onclick="removeYubikey(${y.id})">Entfernen</button>
+                </td>
+            </tr>`).join('');
+        } catch (e) { showError(e.message); }
+    }
+
+    async function addYubikey() {
+        const otp   = document.getElementById('yk-new-otp').value.trim();
+        const label = document.getElementById('yk-new-label').value.trim();
+        if (!otp) { showError('OTP oder Public-ID ist erforderlich'); return; }
+        try {
+            await api('/users/' + currentYubikeyUserId + '/yubikeys', {
+                method: 'POST',
+                body: JSON.stringify({ otp_or_public_id: otp, label: label || null }),
+            });
+            document.getElementById('yk-new-otp').value = '';
+            document.getElementById('yk-new-label').value = '';
+            await loadYubikeys();
+            loadUsers();
+        } catch (e) { showError(e.message); }
+    }
+
+    function removeYubikey(ykId) {
+        confirmAction('YubiKey wirklich entfernen?', async () => {
+            try {
+                await api('/users/' + currentYubikeyUserId + '/yubikeys/' + ykId, { method: 'DELETE' });
+                await loadYubikeys();
                 loadUsers();
             } catch (e) { showError(e.message); }
         });
@@ -810,6 +901,31 @@
             </div>`;
         } catch (e) {
             document.getElementById('verify-result').innerHTML =
+                `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
+        }
+    }
+
+    async function verifyYubikey() {
+        const otp    = document.getElementById('verify-yubikey-otp').value.trim();
+        const roomId = document.getElementById('verify-yubikey-room').value.trim();
+        const resultDiv = document.getElementById('verify-yubikey-result');
+        if (!otp || !roomId) { resultDiv.innerHTML = '<p>Bitte OTP und Raum-ID eingeben.</p>'; return; }
+        try {
+            const res = await api('/access/yubikey/verify', {
+                method: 'POST',
+                body: JSON.stringify({ yubikey_otp: otp, room_id: roomId }),
+            });
+            if (!res) return;
+            const cls = res.access ? 'verify-granted' : 'verify-denied';
+            resultDiv.innerHTML = `<div class="verify-result ${cls}">
+                <strong>${res.access ? 'Zugang gew&auml;hrt' : 'Zugang verweigert'}</strong><br>
+                ${esc(res.message)}<br>
+                ${res.user_id   ? 'Benutzer: ' + esc(res.user_id)   + '<br>' : ''}
+                ${res.user_name ? 'Name: '     + esc(res.user_name) + '<br>' : ''}
+                Zeit: ${new Date(res.timestamp).toLocaleString('de-DE')}
+            </div>`;
+        } catch (e) {
+            document.getElementById('verify-yubikey-result').innerHTML =
                 `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
         }
     }
