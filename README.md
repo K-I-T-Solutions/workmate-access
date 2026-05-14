@@ -1,6 +1,6 @@
 # workmate-access
 
-NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar und per Keycloak OIDC gesichert.
+NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar, per Keycloak OIDC gesichert und unterstützt Dark Mode sowie Gravatar-Profilbilder.
 
 **Live:** https://access.intern.phudevelopement.xyz
 
@@ -50,12 +50,13 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP
 | ESP32 | C++, PlatformIO, Arduino-Framework | NFC-Lesung, WiFi, eingebetteter Webserver |
 | PN532 | I2C, Adafruit PN532-Lib | NFC-Chips und -Karten lesen |
 | Backend | FastAPI, SQLAlchemy, Pydantic v2 | REST-API, Zugangsprüfung, OTP, YubiKey |
-| Datenbank | PostgreSQL 15+ | Users, Rooms, Chips, YubiKeys, Logs, OTPs |
+| Datenbank | PostgreSQL 15+ | Users, Rooms, Room Groups, Chips, YubiKeys, Logs, OTPs |
 | Migrationen | Alembic | Datenbankschema-Versionen |
 | OTP-Versand | sent.dm SDK | SMS und WhatsApp-Nachrichten |
 | YubiKey | YubiCloud API | Hardware-Token-Validierung |
 | Auth | Keycloak 26+ (OIDC, PKCE) | Admin-Dashboard-Authentifizierung |
 | Reverse Proxy | Caddy | HTTPS via Let's Encrypt (Cloudflare DNS-01) |
+| Dashboard-UI | Tailwind CSS, Vanilla JS | Dark Mode, Gravatar, Raum-Gruppen, Berechtigungs-Karten |
 
 ---
 
@@ -257,6 +258,15 @@ YUBICO_SECRET_KEY=
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 | updated_at | TIMESTAMP | Letzte Änderung |
 
+### room_groups
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| id | INTEGER (PK) | Auto-Increment |
+| name | VARCHAR | Gruppenname (z. B. `Admin Räume`) |
+| color | VARCHAR | Hex-Farbe für die Anzeige (z. B. `#6366f1`) |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
+
 ### rooms
 
 | Spalte | Typ | Beschreibung |
@@ -265,6 +275,7 @@ YUBICO_SECRET_KEY=
 | name | VARCHAR | Anzeigename des Raums |
 | description | TEXT | Optionale Beschreibung |
 | zigbee_lock_id | VARCHAR | Optionale Zigbee-Lock-Geräte-ID |
+| group_id | INTEGER (FK→room_groups) | Zugehörige Gruppe (optional) |
 | is_active | BOOLEAN | Raum aktiv |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
@@ -424,6 +435,15 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 | `POST` | `/users/{id}/yubikeys` | YubiKey registrieren |
 | `DELETE` | `/users/{id}/yubikeys/{yk_id}` | YubiKey entfernen |
 
+### Raum-Gruppen
+
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/room-groups/` | Alle Gruppen auflisten |
+| `POST` | `/room-groups/` | Neue Gruppe anlegen |
+| `PATCH` | `/room-groups/{id}` | Gruppe umbenennen / Farbe ändern |
+| `DELETE` | `/room-groups/{id}` | Gruppe löschen (Räume werden nicht gelöscht) |
+
 ### Räume
 
 | Methode | Endpunkt | Beschreibung |
@@ -431,7 +451,7 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 | `GET` | `/rooms/` | Alle Räume auflisten |
 | `POST` | `/rooms/` | Neuen Raum anlegen |
 | `GET` | `/rooms/{id}` | Einzelnen Raum abrufen |
-| `PATCH` | `/rooms/{id}` | Raum aktualisieren |
+| `PATCH` | `/rooms/{id}` | Raum aktualisieren (inkl. `group_id`) |
 | `DELETE` | `/rooms/{id}` | Raum deaktivieren |
 
 ### Berechtigungen
@@ -498,6 +518,7 @@ workmate-access/
 │       │   └── database.py     ← SQLAlchemy Engine & Session
 │       ├── models/
 │       │   ├── user.py
+│       │   ├── room_group.py
 │       │   ├── room.py
 │       │   ├── access_log.py
 │       │   ├── access_permission.py
@@ -511,6 +532,7 @@ workmate-access/
 │       ├── api/routes/
 │       │   ├── users.py
 │       │   ├── rooms.py
+│       │   ├── room_groups.py
 │       │   ├── permissions.py
 │       │   └── access.py
 │       ├── services/
