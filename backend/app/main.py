@@ -4,14 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from .core.config import settings
-from .db.database import engine
-from .models import Base
 from .api.routes import access, rooms, users, permissions, nfc_chips, yubikeys
 
 STATIC_DIR = Path(__file__).parent / "static"
-
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJEKT_NAME,

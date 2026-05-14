@@ -103,6 +103,7 @@ def validate_with_yubico(otp: str) -> None:
 
 
 def verify_yubikey_access(db: Session, otp: str, room_id: str, device_id: str = "") -> CardVerifyResponse:
+    otp = otp.strip().lower()
     validate_otp_format(otp)
     timestamp = datetime.utcnow()
     public_id = extract_public_id(otp)

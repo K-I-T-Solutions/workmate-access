@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # CORS
-    CORS_ORIGINS: str = '*'
+    CORS_ORIGINS: str = '["*"]'
 
     # Access Control
     DEFAULT_LOCK_TIMEOUT: int = 5
