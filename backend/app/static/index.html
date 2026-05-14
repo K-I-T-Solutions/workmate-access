@@ -344,7 +344,7 @@
             const config = await fetch('/api/v1/config').then(r => r.json());
 
             loadingMsg.textContent = 'Keycloak wird geladen…';
-            await loadScript(config.keycloak_url + '/js/keycloak.js');
+            await loadScript('/static/keycloak.js');
 
             keycloak = new Keycloak({
                 url: config.keycloak_url,
