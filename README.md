@@ -1,6 +1,8 @@
 # workmate-access
 
-Workmate Access ist ein NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP32-Mikrocontroller liest NFC-Chips und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet und ein Audit-Log führt.
+NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar und per Keycloak OIDC gesichert.
+
+**Live:** https://access.intern.phudevelopement.xyz
 
 ## Inhaltsverzeichnis
 
@@ -10,48 +12,50 @@ Workmate Access ist ein NFC- und OTP-basiertes Zugangskontrollsystem für Räume
 - [Backend-Setup](#backend-setup)
 - [Firmware-Setup](#firmware-setup)
 - [Umgebungsvariablen](#umgebungsvariablen)
+- [Keycloak-Setup](#keycloak-setup)
 - [Datenbankschema](#datenbankschema)
 - [API-Referenz](#api-referenz)
-- [OTP-Flow](#otp-flow)
 - [Zugangslogik](#zugangslogik)
-- [ESP32 Web-UI](#esp32-web-ui)
-- [TODOs](#todos)
+- [Projektstruktur](#projektstruktur)
 
 ---
 
 ## Architektur
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Netzwerk (LAN/WiFi)                     │
-│                                                                  │
-│  ┌─────────────┐   HTTP/JSON    ┌─────────────────────────────┐ │
-│  │   ESP32     │ ◄────────────► │   FastAPI-Backend           │ │
-│  │  + PN532    │                │   (Python 3.11+)            │ │
-│  │  NFC-Reader │                │                             │ │
-│  └─────────────┘                │  ┌──────────┐ ┌──────────┐ │ │
-│                                 │  │PostgreSQL│ │ Alembic  │ │ │
-│  ┌─────────────┐                │  │   DB     │ │Migrations│ │ │
-│  │  Smartphone │  SMS/WhatsApp  │  └──────────┘ └──────────┘ │ │
-│  │    (OTP)    │ ◄────────────► │                             │ │
-│  └─────────────┘    sent.dm     │  ┌──────────┐              │ │
-│                                 │  │ sent.dm  │              │ │
-│  ┌─────────────┐                │  │  API     │              │ │
-│  │  Admin-UI   │   HTTP/JSON    │  └──────────┘              │ │
-│  │ (Browser)   │ ◄────────────► │                             │ │
-│  └─────────────┘                └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                          Netzwerk (LAN/WiFi)                         │
+│                                                                      │
+│  ┌─────────────┐   HTTP/JSON    ┌──────────────────────────────────┐ │
+│  │   ESP32     │ ◄────────────► │   FastAPI-Backend                │ │
+│  │  + PN532    │                │   (Python 3.11+)                 │ │
+│  │  NFC-Reader │                │                                  │ │
+│  └─────────────┘                │  ┌──────────┐  ┌─────────────┐  │ │
+│                                 │  │PostgreSQL│  │  Keycloak   │  │ │
+│  ┌─────────────┐                │  │    DB    │  │  OIDC/JWKS  │  │ │
+│  │  Smartphone │  SMS/WhatsApp  │  └──────────┘  └─────────────┘  │ │
+│  │    (OTP)    │ ◄────────────► │                                  │ │
+│  └─────────────┘    sent.dm     │  ┌──────────┐  ┌─────────────┐  │ │
+│                                 │  │ sent.dm  │  │  YubiCloud  │  │ │
+│  ┌─────────────┐                │  │   API    │  │     API     │  │ │
+│  │  Admin-     │  HTTPS + OIDC  │  └──────────┘  └─────────────┘  │ │
+│  │  Dashboard  │ ◄────────────► │                                  │ │
+│  │  (Browser)  │                └──────────────────────────────────┘ │
+│  └─────────────┘                                                     │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 | Komponente | Technologie | Zweck |
 |---|---|---|
 | ESP32 | C++, PlatformIO, Arduino-Framework | NFC-Lesung, WiFi, eingebetteter Webserver |
-| PN532 | I2C, Adafruit PN532-Lib | NFC-Chip und -Karten lesen |
-| Backend | FastAPI, SQLAlchemy, Pydantic v2 | REST-API, Zugangsprüfung, OTP |
-| Datenbank | PostgreSQL 15+ | Users, Rooms, Access-Logs, OTP-Codes |
+| PN532 | I2C, Adafruit PN532-Lib | NFC-Chips und -Karten lesen |
+| Backend | FastAPI, SQLAlchemy, Pydantic v2 | REST-API, Zugangsprüfung, OTP, YubiKey |
+| Datenbank | PostgreSQL 15+ | Users, Rooms, Chips, YubiKeys, Logs, OTPs |
 | Migrationen | Alembic | Datenbankschema-Versionen |
 | OTP-Versand | sent.dm SDK | SMS und WhatsApp-Nachrichten |
-| Auth | Keycloak (OIDC) | Admin-Authentifizierung |
+| YubiKey | YubiCloud API | Hardware-Token-Validierung |
+| Auth | Keycloak 26+ (OIDC, PKCE) | Admin-Dashboard-Authentifizierung |
+| Reverse Proxy | Caddy | HTTPS via Let's Encrypt (Cloudflare DNS-01) |
 
 ---
 
@@ -85,7 +89,7 @@ Workmate Access ist ein NFC- und OTP-basiertes Zugangskontrollsystem für Räume
 - Python 3.11+
 - PostgreSQL 15+
 - pip / virtualenv
-- (Optional) Keycloak-Instanz für Admin-Auth
+- Keycloak 26+ (Realm + Client konfiguriert, siehe [Keycloak-Setup](#keycloak-setup))
 
 **Firmware**
 - [PlatformIO CLI](https://platformio.org/install/cli) oder VS Code + PlatformIO Extension
@@ -97,7 +101,7 @@ Workmate Access ist ein NFC- und OTP-basiertes Zugangskontrollsystem für Räume
 
 ```bash
 # 1. Repository klonen
-git clone <repo-url>
+git clone https://github.com/commanderphu/workmate-access.git
 cd workmate-access
 
 # 2. Virtuelle Umgebung anlegen
@@ -117,12 +121,17 @@ alembic upgrade head
 
 # 6. Backend starten
 uvicorn app.main:app --reload --port 8000
-# oder:
-make run
 ```
 
-Die API ist danach unter `http://localhost:8000` erreichbar.  
+Die API ist danach unter `http://localhost:8000` erreichbar.
 Swagger-UI: `http://localhost:8000/docs`
+Admin-Dashboard: `http://localhost:8000`
+
+### Docker
+
+```bash
+docker compose up -d --build
+```
 
 ### Makefile-Befehle (backend/)
 
@@ -161,7 +170,7 @@ pio run --target upload
 pio device monitor --baud 115200
 ```
 
-Der ESP32 verbindet sich nach dem Start mit dem WLAN und wartet auf NFC-Karten. Wird eine Karte erkannt, sendet er die UID an das Backend (`POST /access/verify`). Die integrierte LED signalisiert den Zugansstatus.
+Der ESP32 verbindet sich nach dem Start mit dem WLAN und wartet auf NFC-Karten. Wird eine Karte erkannt, sendet er die UID an das Backend (`POST /access/verify-card`). Die integrierte LED signalisiert den Zugangsstatus.
 
 ---
 
@@ -171,34 +180,63 @@ Kopiere `.env.example` nach `.env` und passe die Werte an.
 
 ```ini
 # Datenbank
-DATABASE_URL=postgresql://user:password@host:5432/workmate_access
+DATABASE_URL=postgresql://workmate:workmate@localhost:5432/workmate_access
 PROJEKT_NAME=Workmate Access
+LOG_LEVEL=INFO
 
 # Keycloak (Admin-Auth)
-KEYCLOAK_URL=https://login.example.com
-KEYCLOAK_CLIENT_ID=workmate-backend
-KEYCLOAK_CLIENT_SECRET=<secret>
+KEYCLOAK_URL=https://login.example.com          # Public-URL (Issuer-Validierung + Frontend)
+KEYCLOAK_INTERNAL_URL=http://keycloak:8080      # Docker-interner Hostname für JWKS-Fetch
+KEYCLOAK_CLIENT_ID=workmate-access              # Public PKCE-Client
 KEYCLOAK_REALM=kit
 
 # CORS
-CORS_ORIGINS=["http://localhost:3000","http://localhost:8000"]
+CORS_ORIGINS=["https://access.example.com","http://localhost:8000"]
 
 # Zugangskontrolle
 DEFAULT_LOCK_TIMEOUT=5        # Sekunden, die das Schloss offen bleibt
 MAX_FAILED_ATTEMPTS=3         # Fehlversuche bis Sperrung
 LOCKOUT_DURATION=300          # Sperrdauer in Sekunden
 
-# Logging
-LOG_LEVEL=INFO
-
 # sent.dm (OTP via SMS / WhatsApp)
 SENT_DM_API_KEY=<api-key>
-SENT_DM_CUSTOMER_ID=<profile-id>        # Profil-UUID mit Guthaben
-SENT_DM_OTP_TEMPLATE_ID=<template-id>  # Vorab genehmigtes Template
-SENT_DM_SANDBOX=false                   # true = kein echter Versand
+SENT_DM_CUSTOMER_ID=<profile-uuid>
+SENT_DM_OTP_TEMPLATE_ID=otp
+SENT_DM_SANDBOX=false         # true = kein echter Versand
+
+# OTP Rate-Limiting
+OTP_SEND_MAX_PER_HOUR=5
+OTP_VERIFY_MAX_ATTEMPTS=10
+OTP_VERIFY_WINDOW_MINUTES=15
+
+# Yubico OTP (YubiCloud)
+# API-Key beantragen: https://upgrade.yubico.com/getapikey/
+YUBICO_CLIENT_ID=
+YUBICO_SECRET_KEY=
 ```
 
-> **Sandbox-Modus:** `SENT_DM_SANDBOX=true` sendet keine echten Nachrichten — nützlich für Tests ohne Guthaben.
+---
+
+## Keycloak-Setup
+
+### Realm & Clients
+
+1. Realm `kit` anlegen (oder vorhandenen verwenden)
+2. Client `workmate-access` anlegen:
+   - **Client type:** Public
+   - **Authentication flow:** Standard flow + PKCE (`S256`)
+   - **Valid Redirect URIs:** `https://access.example.com/*`
+   - **Web Origins:** `https://access.example.com` (kein Trailing-Slash!)
+
+### Bekannte Fallstricke
+
+| Problem | Lösung |
+|---|---|
+| Keycloak 26+ liefert `/js/keycloak.js` nicht mehr | `keycloak-js` npm-Paket als `/static/keycloak.js` bündeln |
+| `keycloak-js` ist ES-Modul | `import('/static/keycloak.js')` statt `<script src>` |
+| JWT `aud`-Claim fehlt bei Public Clients | `verify_aud: False` in der Token-Validierung |
+| Docker kann externe Keycloak-Domain nicht auflösen | `KEYCLOAK_INTERNAL_URL=http://keycloak:8080` für JWKS-Fetch setzen |
+| CORS-Fehler bei Login | Web Origins **ohne** Trailing-Slash eintragen |
 
 ---
 
@@ -210,10 +248,11 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 |---|---|---|
 | id | VARCHAR (PK) | z. B. `KIT-0001` |
 | keycloak_id | VARCHAR | Keycloak-Benutzer-UUID |
+| username | VARCHAR | Login-Name |
 | email | VARCHAR | E-Mail-Adresse |
-| phone_number | VARCHAR | E.164-Format, z. B. `+491622654262` |
+| phone_number | VARCHAR | E.164-Format, z. B. `+4915712345678` |
 | display_name | VARCHAR | Anzeigename |
-| role | VARCHAR | `admin`, `user`, etc. |
+| role | VARCHAR | `admin` oder `user` |
 | is_active | BOOLEAN | Konto aktiv |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 | updated_at | TIMESTAMP | Letzte Änderung |
@@ -222,9 +261,10 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 
 | Spalte | Typ | Beschreibung |
 |---|---|---|
-| id | VARCHAR (PK) | z. B. `raum-01` |
+| id | VARCHAR (PK) | z. B. `serverroom` |
 | name | VARCHAR | Anzeigename des Raums |
 | description | TEXT | Optionale Beschreibung |
+| zigbee_lock_id | VARCHAR | Optionale Zigbee-Lock-Geräte-ID |
 | is_active | BOOLEAN | Raum aktiv |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
@@ -235,7 +275,7 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 | id | INTEGER (PK) | Auto-Increment |
 | user_id | VARCHAR (FK→users) | Benutzer |
 | room_id | VARCHAR (FK→rooms) | Raum |
-| granted_by | VARCHAR | Admin, der die Berechtigung erteilt hat |
+| access_level | VARCHAR | `read`, `write`, `admin` |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
 ### access_logs
@@ -245,9 +285,10 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 | id | INTEGER (PK) | Auto-Increment |
 | user_id | VARCHAR (FK→users) | Benutzer (nullable bei unbekannter Karte) |
 | room_id | VARCHAR | Raum |
-| chip_uid | VARCHAR | UID des NFC-Chips |
-| access_granted | BOOLEAN | Zugang gewährt? |
-| reason | VARCHAR | Ablehnungsgrund (wenn kein Zugang) |
+| granted | BOOLEAN | Zugang gewährt? |
+| reason | VARCHAR | Ablehnungsgrund |
+| device_id | VARCHAR | ESP32-Gerät |
+| nfc_chip_id | INTEGER (FK→user_chips) | Verwendeter NFC-Chip |
 | timestamp | TIMESTAMP | Zeitpunkt des Versuchs |
 
 ### user_chips
@@ -256,10 +297,19 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 |---|---|---|
 | id | INTEGER (PK) | Auto-Increment |
 | user_id | VARCHAR (FK→users) | Benutzer |
-| chip_uid | VARCHAR | NFC-Chip-UID |
-| chip_type | VARCHAR | `nfc` oder `card` |
+| chip_uid | VARCHAR | NFC-Chip-UID (z. B. `74AFF106`) |
+| card_uid | VARCHAR | Karten-UID (falls abweichend) |
 | label | VARCHAR | Optionale Bezeichnung |
-| is_active | BOOLEAN | Chip aktiv |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
+
+### user_yubikeys
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| id | INTEGER (PK) | Auto-Increment |
+| user_id | VARCHAR (FK→users) | Benutzer |
+| public_id | VARCHAR | YubiKey Public-ID (erste 12 Zeichen des OTP) |
+| label | VARCHAR | Optionale Bezeichnung |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
 ### otp_codes
@@ -271,8 +321,8 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 | code | VARCHAR(6) | 6-stelliger Code |
 | room_id | VARCHAR | Raum, für den der Code gilt |
 | channel | VARCHAR | `sms` oder `whatsapp` |
-| is_used | BOOLEAN | Code eingelöst oder ungültig |
-| expires_at | TIMESTAMP | Ablaufzeit (5 min nach Erstellung) |
+| is_used | BOOLEAN | Code eingelöst |
+| expires_at | TIMESTAMP | Ablaufzeit (15 min nach Erstellung) |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 | verified_at | TIMESTAMP | Einlösezeitpunkt |
 
@@ -282,225 +332,115 @@ SENT_DM_SANDBOX=false                   # true = kein echter Versand
 
 Base-URL: `/api/v1`
 
+Alle Admin-Endpunkte erfordern einen gültigen Keycloak-Bearer-Token (`Authorization: Bearer <token>`).
+
 ### Zugangsprüfung
 
 #### `POST /access/verify`
+Prüft Benutzer-/Raumberechtigung direkt.
 
-Prüft, ob ein NFC-Chip Zugang zu einem Raum hat.
+#### `POST /access/verify-card`
+Prüft Zugang per NFC-Karten-UID und Geräte-ID.
 
 **Request:**
 ```json
 {
-  "chip_uid": "A1B2C3D4",
-  "room_id": "raum-01"
+  "card_uid": "74AFF106",
+  "device_id": "esp32_entrance_01",
+  "room_id": "serverroom"
 }
 ```
 
-**Response 200 (Zugang gewährt):**
+**Response:**
 ```json
 {
   "access": true,
   "message": "Zugang gewährt",
   "user_id": "KIT-0001",
   "user_name": "Joshua Phu",
-  "timestamp": "2026-05-04T12:00:00.000000"
+  "timestamp": "2026-05-14T12:00:00.000000"
 }
 ```
 
-**Response 200 (Kein Zugang):**
+#### `POST /access/yubikey/verify`
+Validiert ein Yubico OTP gegen YubiCloud und prüft die Raumberechtigung.
+
+**Request:**
 ```json
 {
-  "access": false,
-  "message": "Keine Berechtigung für diesen Raum",
-  "user_id": null,
-  "user_name": null,
-  "timestamp": "2026-05-04T12:00:00.000000"
+  "yubikey_otp": "ccccccxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "room_id": "serverroom"
 }
 ```
+
+#### `GET /access/logs`
+Zugangsprotokoll abrufen. Query-Parameter: `user_id`, `room_id`, `limit`.
+
+#### `GET /access/logs/export`
+Protokoll als CSV-Datei herunterladen.
 
 ---
 
 ### OTP
 
 #### `POST /access/otp/send`
-
-Generiert einen 6-stelligen OTP-Code und versendet ihn per WhatsApp (bevorzugt) oder SMS.
+Sendet einen 6-stelligen OTP-Code per WhatsApp (bevorzugt) oder SMS.
 
 **Request:**
 ```json
-{
-  "phone_number": "+491622654262",
-  "room_id": "raum-01"
-}
+{ "phone_number": "+4915712345678", "room_id": "serverroom" }
 ```
-
-**Response 200:**
-```json
-{
-  "success": true,
-  "message": "OTP gesendet via SMS",
-  "channel": "sms"
-}
-```
-
-**Response 502** — sent.dm-Versand fehlgeschlagen:
-```json
-{
-  "detail": "Nachricht konnte nicht gesendet werden: ..."
-}
-```
-
-> Telefonnummer muss im E.164-Format angegeben werden (z. B. `+491622654262`, nicht `+4901622654262`).
-
----
 
 #### `POST /access/otp/verify`
-
-Verifiziert einen OTP-Code und prüft anschließend die Raumberechtigung des Benutzers.
+Verifiziert den OTP-Code und prüft die Raumberechtigung.
 
 **Request:**
 ```json
-{
-  "phone_number": "+491622654262",
-  "code": "527511",
-  "room_id": "raum-01"
-}
+{ "phone_number": "+4915712345678", "code": "527511", "room_id": "serverroom" }
 ```
 
-**Response 200 (Zugang gewährt):**
-```json
-{
-  "access": true,
-  "message": "Zugang gewährt",
-  "user_id": "KIT-0001",
-  "user_name": "Joshua Phu",
-  "timestamp": "2026-05-04T12:00:00.000000"
-}
-```
-
-**Response 200 (Ungültiger Code):**
-```json
-{
-  "access": false,
-  "message": "OTP ungültig oder abgelaufen",
-  "user_id": null,
-  "user_name": null,
-  "timestamp": "2026-05-04T12:00:00.000000"
-}
-```
-
-**Response 422** — Validierungsfehler (Code nicht 6-stellig, Nummer nicht E.164):
-```json
-{
-  "detail": [
-    {
-      "type": "value_error",
-      "loc": ["body", "code"],
-      "msg": "Value error, code muss genau 6 Ziffern haben"
-    }
-  ]
-}
-```
+**OTP-Eigenschaften:**
+- 6 Stellen, kryptografisch zufällig
+- Gültig für 15 Minuten, einmalig verwendbar
+- Kanalwahl: WhatsApp wenn verfügbar, sonst SMS
+- Rate-Limit: max. 5 Sendungen pro Stunde pro Nummer
+- Vorherige offene Codes werden automatisch invalidiert
 
 ---
 
 ### Benutzer
 
-#### `GET /users`
-Alle Benutzer auflisten.
-
-#### `POST /users`
-Neuen Benutzer anlegen.
-
-**Request:**
-```json
-{
-  "id": "KIT-0002",
-  "email": "max@example.com",
-  "phone_number": "+491511234567",
-  "display_name": "Max Mustermann",
-  "role": "user"
-}
-```
-
-#### `GET /users/{user_id}`
-Einzelnen Benutzer abrufen.
-
-#### `PUT /users/{user_id}`
-Benutzer aktualisieren.
-
-#### `DELETE /users/{user_id}`
-Benutzer deaktivieren.
-
-#### `GET /users/{user_id}/chips`
-NFC-Chips eines Benutzers auflisten.
-
-#### `POST /users/{user_id}/chips`
-NFC-Chip einem Benutzer zuordnen.
-
-**Request:**
-```json
-{
-  "chip_uid": "A1B2C3D4",
-  "chip_type": "nfc",
-  "label": "Büroschlüssel"
-}
-```
-
----
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/users/` | Alle Benutzer auflisten |
+| `POST` | `/users/` | Neuen Benutzer anlegen |
+| `GET` | `/users/{id}` | Einzelnen Benutzer abrufen |
+| `PATCH` | `/users/{id}` | Benutzer aktualisieren |
+| `DELETE` | `/users/{id}` | Benutzer deaktivieren |
+| `GET` | `/users/{id}/chips` | NFC-Chips auflisten |
+| `POST` | `/users/{id}/chips` | NFC-Chip hinzufügen |
+| `DELETE` | `/users/{id}/chips/{chip_id}` | NFC-Chip entfernen |
+| `GET` | `/users/{id}/yubikeys` | YubiKeys auflisten |
+| `POST` | `/users/{id}/yubikeys` | YubiKey registrieren |
+| `DELETE` | `/users/{id}/yubikeys/{yk_id}` | YubiKey entfernen |
 
 ### Räume
 
-#### `GET /rooms`
-Alle Räume auflisten.
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/rooms/` | Alle Räume auflisten |
+| `POST` | `/rooms/` | Neuen Raum anlegen |
+| `GET` | `/rooms/{id}` | Einzelnen Raum abrufen |
+| `PATCH` | `/rooms/{id}` | Raum aktualisieren |
+| `DELETE` | `/rooms/{id}` | Raum deaktivieren |
 
-#### `POST /rooms`
-Neuen Raum anlegen.
+### Berechtigungen
 
-#### `GET /rooms/{room_id}`
-Einzelnen Raum abrufen.
-
-#### `GET /rooms/{room_id}/access-logs`
-Zugangsprotokoll eines Raums abrufen.
-
----
-
-## OTP-Flow
-
-```
-Benutzer                  ESP32 / App            Backend              sent.dm
-   │                          │                     │                    │
-   │   Zugangswunsch          │                     │                    │
-   │─────────────────────────►│                     │                    │
-   │                          │  POST /otp/send     │                    │
-   │                          │────────────────────►│                    │
-   │                          │                     │  WhatsApp-Check    │
-   │                          │                     │───────────────────►│
-   │                          │                     │◄───────────────────│
-   │                          │                     │  SMS/WA senden     │
-   │                          │                     │───────────────────►│
-   │                          │◄────────────────────│                    │
-   │   "Code gesendet"        │                     │                    │
-   │◄─────────────────────────│                     │                    │
-   │                          │                     │                    │
-   │   Code eingeben          │                     │                    │
-   │─────────────────────────►│                     │                    │
-   │                          │  POST /otp/verify   │                    │
-   │                          │────────────────────►│                    │
-   │                          │                     │  Code + User +     │
-   │                          │                     │  Berechtigung      │
-   │                          │                     │  prüfen            │
-   │                          │◄────────────────────│                    │
-   │   Zugang ✓ / ✗           │                     │                    │
-   │◄─────────────────────────│                     │                    │
-```
-
-**OTP-Eigenschaften:**
-- 6 Stellen, kryptografisch zufällig (`secrets.choice`)
-- Gültig für 5 Minuten
-- Einmalig verwendbar (nach Verifikation sofort als `is_used=true` markiert)
-- Kanalwahl: WhatsApp wenn verfügbar (Contacts-API), sonst SMS
-- Vorherige offene Codes für dieselbe Nummer werden automatisch invalidiert
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/permissions/` | Alle Berechtigungen auflisten |
+| `POST` | `/permissions/` | Berechtigung erstellen |
+| `DELETE` | `/permissions/{id}` | Berechtigung entfernen |
 
 ---
 
@@ -508,62 +448,32 @@ Benutzer                  ESP32 / App            Backend              sent.dm
 
 ### NFC-Zugang (Primär)
 
-1. ESP32 liest NFC-Chip-UID
-2. `POST /access/verify` mit `chip_uid` + `room_id`
+1. ESP32 liest NFC-Chip-UID oder Karten-UID
+2. `POST /access/verify-card` mit `card_uid` + `device_id` + `room_id`
 3. Backend sucht `user_chips` nach UID → findet Benutzer
 4. Prüft `access_permissions` für (user, room)
 5. Schreibt Eintrag in `access_logs`
 6. Gibt `access: true/false` zurück
+
+### YubiKey-Zugang
+
+1. Benutzer steckt YubiKey und tippt OTP (44 Zeichen)
+2. `POST /access/yubikey/verify` mit OTP + `room_id`
+3. Backend extrahiert Public-ID (erste 12 Zeichen) → findet Benutzer
+4. Validiert OTP gegen YubiCloud
+5. Prüft Raumberechtigung
 
 ### OTP-Zugang (Fallback / Gäste)
 
 1. Benutzer gibt Telefonnummer ein
 2. `POST /access/otp/send` → Code per SMS/WhatsApp
 3. Benutzer gibt Code ein
-4. `POST /access/otp/verify` → Code-Validierung + Raumberechtigung prüfen
-5. Zugang bei `access: true`
+4. `POST /access/otp/verify` → Code-Validierung + Raumberechtigung
 
-### Rate-Limiting / Sperrung
+### Zugangshierarchie
 
-- Nach `MAX_FAILED_ATTEMPTS` (default: 3) Fehlversuchen wird ein Konto für `LOCKOUT_DURATION` Sekunden (default: 300 s = 5 min) gesperrt.
-- Admins (`role=admin`) haben Zugang zu allen Räumen, ohne `access_permissions`-Eintrag.
-
----
-
-## ESP32 Web-UI
-
-Der ESP32 hostet einen eingebetteten Webserver, der über die IP-Adresse im Browser erreichbar ist.
-
-- **WiFi-Konfiguration:** SSID und Passwort können per AP-Modus eingestellt werden
-- **Status-Seite:** Zeigt aktuelle IP, WLAN-Signal, letzte NFC-Lesung
-- **OTP-Formular:** Telefonnummer eingeben → Code anfordern → Code verifizieren
-
-Die statische `index.html` befindet sich in `backend/app/static/index.html` und wird vom Backend ausgeliefert.
-
----
-
-## TODOs
-
-### Kritisch
-
-- [ ] Keycloak-Auth vollständig implementieren (JWT-Validierung in FastAPI-Middleware)
-- [ ] HTTPS für Backend-Kommunikation (Let's Encrypt oder internes Zertifikat)
-- [ ] ESP32-Firmware: TLS-Zertifikat für HTTPS-Requests hinterlegen
-
-### Hoch
-
-- [ ] Rate-Limiting für OTP-Endpunkte (max. X Anfragen pro Nummer pro Stunde)
-- [ ] Admin-Dashboard (Web-UI für Benutzer-/Raumverwaltung)
-- [ ] MQTT-Integration für Echtzeit-Events (Tür-offen-Status, Alarm)
-- [ ] Carrier-Freigabe für SMS-Versand abwarten (sent.dm Sender-Profil-Verifizierung)
-
-### Mittel
-
-- [ ] Push-Benachrichtigungen bei Zugangsverweigerung (z. B. Telegram-Bot)
-- [ ] CSV/PDF-Export des Zugangs-Logs
-- [ ] Mehrere NFC-Chips pro Benutzer im Frontend verwalten
-- [ ] OTP-Fallback per E-Mail (wenn keine Telefonnummer hinterlegt)
-- [ ] ESP32: Deep-Sleep-Modus zwischen NFC-Scans für Batteriebetrieb
+- `role=admin` → Zugang zu allen Räumen ohne `access_permissions`-Eintrag
+- `role=user` → Zugang nur mit explizitem `access_permissions`-Eintrag
 
 ---
 
@@ -571,45 +481,46 @@ Die statische `index.html` befindet sich in `backend/app/static/index.html` und 
 
 ```
 workmate-access/
-├── .env                        ← Lokale Konfiguration (nicht committen)
 ├── .env.example                ← Vorlage für .env
-├── .venv/                      ← Python-Virtualenv (nicht committen)
+├── docker-compose.yml
 ├── README.md
 │
 ├── backend/
+│   ├── Dockerfile
 │   ├── alembic.ini
 │   ├── Makefile
 │   ├── requirements.txt
-│   ├── app/
-│   │   ├── main.py             ← FastAPI-App, Middleware, Router
-│   │   ├── core/
-│   │   │   ├── config.py       ← Settings (pydantic_settings)
-│   │   │   └── database.py     ← SQLAlchemy Engine & Session
-│   │   ├── models/
-│   │   │   ├── user.py
-│   │   │   ├── room.py
-│   │   │   ├── access_log.py
-│   │   │   ├── access_permission.py
-│   │   │   ├── user_chip.py
-│   │   │   └── otp_code.py
-│   │   ├── schemas/
-│   │   │   ├── user.py
-│   │   │   ├── room.py
-│   │   │   └── access.py       ← OTP + Verify-Schemas
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       ├── users.py
-│   │   │       ├── rooms.py
-│   │   │       └── access.py   ← /verify, /otp/send, /otp/verify
-│   │   ├── services/
-│   │   │   ├── access_service.py
-│   │   │   └── otp_service.py
-│   │   └── static/
-│   │       └── index.html      ← ESP32 Web-UI
-│   └── migrations/
-│       ├── env.py
-│       └── versions/
-│           └── *.py            ← Alembic-Migrationen
+│   └── app/
+│       ├── main.py             ← FastAPI-App, Middleware, Router
+│       ├── core/
+│       │   ├── auth.py         ← Keycloak JWT-Validierung, JWKS-Cache
+│       │   ├── config.py       ← Settings (pydantic_settings)
+│       │   └── database.py     ← SQLAlchemy Engine & Session
+│       ├── models/
+│       │   ├── user.py
+│       │   ├── room.py
+│       │   ├── access_log.py
+│       │   ├── access_permission.py
+│       │   ├── user_chip.py
+│       │   ├── user_yubikey.py
+│       │   └── otp_code.py
+│       ├── schemas/
+│       │   ├── user.py
+│       │   ├── room.py
+│       │   └── access.py
+│       ├── api/routes/
+│       │   ├── users.py
+│       │   ├── rooms.py
+│       │   ├── permissions.py
+│       │   └── access.py
+│       ├── services/
+│       │   ├── access_service.py
+│       │   └── otp_service.py
+│       ├── static/
+│       │   ├── index.html      ← Admin-Dashboard (Tailwind, Keycloak PKCE)
+│       │   └── keycloak.js     ← keycloak-js@26.2.4 (gebündelt)
+│       └── migrations/
+│           └── versions/       ← Alembic-Migrationen
 │
 └── firmware/
     ├── platformio.ini
