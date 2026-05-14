@@ -39,14 +39,11 @@ def _fetch_jwks() -> dict:
 
 def _decode_token(token: str) -> dict:
     issuer = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}"
-    options = {"verify_aud": bool(settings.KEYCLOAK_CLIENT_ID)}
     decode_kwargs = dict(
         algorithms=["RS256"],
         issuer=issuer,
-        options=options,
+        options={"verify_aud": False},
     )
-    if settings.KEYCLOAK_CLIENT_ID:
-        decode_kwargs["audience"] = settings.KEYCLOAK_CLIENT_ID
 
     jwks = _fetch_jwks()
     try:
