@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import Optional
 from ...db.database import get_db
@@ -54,9 +54,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), _: TokenData = 
     return db_user
 
 @router.get("/", response_model=list[UserResponse])
-def list_users(db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
+def list_users(
+    include_inactive: bool = Query(False),
+    db: Session = Depends(get_db),
+    _: TokenData = Depends(get_current_user),
+):
     """Liste alle Users auf"""
-    return db.query(User).filter(User.is_active == True).all()
+    q = db.query(User)
+    if not include_inactive:
+        q = q.filter(User.is_active == True)
+    return q.all()
 
 @router.get("/wm/{workmate_id}", response_model=UserResponse)
 def get_user_by_workmate_id(workmate_id: str, db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
