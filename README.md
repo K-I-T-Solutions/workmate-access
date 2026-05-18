@@ -134,9 +134,93 @@ Admin-Dashboard: `http://localhost:8000`
 
 ### Docker
 
+Das Projekt läuft als einzelner Backend-Container und hängt sich in ein externes Docker-Netzwerk (`core_network`) ein, in dem PostgreSQL und Keycloak bereits laufen.
+
+**Voraussetzung:** Das externe Netzwerk muss existieren:
+
+```bash
+docker network create core_network
+```
+
+**Starten:**
+
 ```bash
 docker compose up -d --build
 ```
+
+**Stoppen / Neu starten:**
+
+```bash
+docker compose down
+docker compose up -d --build   # mit rebuild
+docker compose up -d           # ohne rebuild
+```
+
+**Logs ansehen:**
+
+```bash
+docker logs -f workmate_access_backend
+```
+
+**Einzelnen Rebuild erzwingen:**
+
+```bash
+docker compose up -d --force-recreate backend
+```
+
+#### docker-compose.yml
+
+```yaml
+services:
+  backend:
+    build: ./backend
+    container_name: workmate_access_backend
+    restart: unless-stopped
+    env_file: .env                          # alle Secrets aus .env
+    environment:
+      DATABASE_URL: postgresql://workmate:workmate@central_postgres:5432/workmate_access
+    networks:
+      - core_network                        # shared mit Postgres + Keycloak
+
+networks:
+  core_network:
+    external: true                          # wird nicht von compose verwaltet
+```
+
+#### Dockerfile (backend/)
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+# Migrationen laufen automatisch beim Start
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+```
+
+> **Hinweis:** Alembic-Migrationen laufen automatisch beim Container-Start (`alembic upgrade head`). Beim ersten Start wird die Datenbank vollständig initialisiert.
+
+#### Netzwerk-Topologie
+
+```
+core_network (Docker Bridge)
+├── central_postgres      ← PostgreSQL (externes Projekt)
+├── keycloak              ← Keycloak 26+ (externes Projekt)
+└── workmate_access_backend
+```
+
+Das Backend erreicht Keycloak intern über `KEYCLOAK_INTERNAL_URL=http://keycloak:8080` (JWKS-Fetch), während das Frontend den öffentlichen `KEYCLOAK_URL` für die OIDC-Weiterleitung nutzt.
 
 ### Makefile-Befehle (backend/)
 
