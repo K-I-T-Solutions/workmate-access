@@ -412,6 +412,12 @@ Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admi
 | user_id | VARCHAR (FK→users) | Benutzer |
 | room_id | VARCHAR (FK→rooms) | Raum |
 | access_level | VARCHAR | `read`, `write`, `admin` |
+| is_active | BOOLEAN | Berechtigung aktiv |
+| valid_from | DATE (nullable) | Gültig ab Datum |
+| valid_until | DATE (nullable) | Gültig bis Datum |
+| time_from | TIME (nullable) | Erlaubter Tagesbeginn |
+| time_until | TIME (nullable) | Erlaubtes Tagesende |
+| weekdays | VARCHAR (nullable) | Erlaubte Wochentage, z. B. `0,1,2,3,4` |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
 ### access_logs
@@ -565,7 +571,33 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 |---|---|---|
 | `GET` | `/permissions/` | Alle Berechtigungen auflisten |
 | `POST` | `/permissions/` | Berechtigung erstellen |
+| `PATCH` | `/permissions/{id}` | Zeiteinschränkungen nachträglich ändern |
 | `DELETE` | `/permissions/{id}` | Berechtigung entfernen |
+
+**Zeitbasierte Felder (alle optional):**
+
+```json
+{
+  "user_id": "KIT-0001",
+  "room_id": "serverroom",
+  "access_level": "read",
+  "valid_from":  "2026-06-01",
+  "valid_until": "2026-08-31",
+  "time_from":   "08:00:00",
+  "time_until":  "18:00:00",
+  "weekdays":    "0,1,2,3,4"
+}
+```
+
+| Feld | Typ | Beschreibung |
+|---|---|---|
+| `valid_from` | `date` (nullable) | Berechtigung gilt erst ab diesem Datum |
+| `valid_until` | `date` (nullable) | Berechtigung läuft an diesem Datum ab |
+| `time_from` | `time` (nullable) | Tagesbeginn des erlaubten Fensters |
+| `time_until` | `time` (nullable) | Tagesende des erlaubten Fensters |
+| `weekdays` | `string` (nullable) | Erlaubte Wochentage, kommasepariert: `0`=Mo … `6`=So — `null` = alle Tage |
+
+Nicht gesetzte Felder bedeuten keine Einschränkung. Der Ablehnungsgrund wird im Audit-Log protokolliert.
 
 ### Keycloak Admin API (SSO-Management)
 
@@ -620,6 +652,21 @@ Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
 
 - `role=admin` → Zugang zu allen Räumen ohne expliziten `access_permissions`-Eintrag
 - `role=user` → Zugang nur mit explizitem `access_permissions`-Eintrag
+
+### Zeitbasierte Prüfung
+
+Bei jedem Zugangversuch werden die Zeitfelder der Berechtigung geprüft:
+
+```
+Berechtigung gefunden?
+    → valid_from überschritten?   → ablehnen: "Berechtigung gilt erst ab …"
+    → valid_until abgelaufen?     → ablehnen: "Berechtigung abgelaufen am …"
+    → aktueller Wochentag erlaubt? → ablehnen: "Zugang nur erlaubt an: Mo, Di, …"
+    → aktuelle Uhrzeit im Fenster? → ablehnen: "Zugang nur zwischen 08:00 und 18:00 Uhr"
+    → Zugang gewährt
+```
+
+Alle Ablehnungsgründe landen im Audit-Log.
 
 ---
 
