@@ -203,21 +203,51 @@ class AccessService:
         Prüfe ob User Zugang zu einem Raum hat.
         Returns: (has_access: bool, reason: str)
         """
-        # Admins haben vollen Zugang
         if user.role == "admin":
             return True, "Admin-Zugang"
 
-        # Prüfe spezifische Berechtigung
         permission = db.query(Permission).filter(
             Permission.user_id == user.id,
             Permission.room_id == room_id,
             Permission.is_active == True
         ).first()
 
-        if permission:
-            return True, f"Berechtigung: {permission.access_level}"
+        if not permission:
+            return False, "Keine Berechtigung"
 
-        return False, "Keine Berechtigung"
+        denied = AccessService._check_time_constraints(permission)
+        if denied:
+            return False, denied
+
+        return True, f"Berechtigung: {permission.access_level}"
+
+    @staticmethod
+    def _check_time_constraints(permission) -> str | None:
+        """Gibt einen Ablehnungsgrund zurück oder None wenn alles passt."""
+        now = datetime.now()
+        today = now.date()
+        current_time = now.time()
+        current_weekday = now.weekday()  # 0=Mo … 6=So
+
+        if permission.valid_from and today < permission.valid_from:
+            return f"Berechtigung gilt erst ab {permission.valid_from}"
+
+        if permission.valid_until and today > permission.valid_until:
+            return f"Berechtigung abgelaufen am {permission.valid_until}"
+
+        if permission.weekdays:
+            allowed = {int(d) for d in permission.weekdays.split(",") if d.strip()}
+            if current_weekday not in allowed:
+                names = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+                allowed_names = ", ".join(names[d] for d in sorted(allowed))
+                return f"Zugang nur erlaubt an: {allowed_names}"
+
+        if permission.time_from and permission.time_until:
+            if not (permission.time_from <= current_time <= permission.time_until):
+                return (f"Zugang nur zwischen {permission.time_from.strftime('%H:%M')}"
+                        f" und {permission.time_until.strftime('%H:%M')} Uhr")
+
+        return None
 
     @staticmethod
     def _log_card_access(
