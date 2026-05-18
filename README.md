@@ -454,6 +454,19 @@ Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admi
 | label | VARCHAR | Optionale Bezeichnung |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
 
+### guest_tokens
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| id | VARCHAR (PK) | UUID des Tokens |
+| room_id | VARCHAR (FK→rooms) | Raum für den der Link gilt |
+| label | VARCHAR (nullable) | Optionale Beschreibung (z. B. "Lieferant") |
+| created_by | VARCHAR (nullable) | Keycloak-Username des Admins |
+| expires_at | TIMESTAMP | Ablaufzeit |
+| is_used | BOOLEAN | Token eingelöst |
+| used_at | TIMESTAMP (nullable) | Einlösezeitpunkt |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
+
 ### otp_codes
 
 | Spalte | Typ | Beschreibung |
@@ -630,6 +643,29 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 
 Nicht gesetzte Felder bedeuten keine Einschränkung. Der Ablehnungsgrund wird im Audit-Log protokolliert.
 
+### Gast-Zugang
+
+Zeitlich begrenzte Einmal-Links ohne Keycloak-Account. Wird im Audit-Log protokolliert.
+
+| Methode | Endpunkt | Auth | Beschreibung |
+|---|---|---|---|
+| `POST` | `/access/guest/generate` | Admin | Gast-Link erstellen |
+| `POST` | `/access/guest/use/{id}` | — | Link einlösen (einmalig, öffentlich) |
+| `GET` | `/access/guest/list` | Admin | Alle Tokens auflisten |
+| `DELETE` | `/access/guest/{id}` | Admin | Token widerrufen |
+
+**Request `generate`:**
+```json
+{ "room_id": "serverroom", "label": "Lieferant 18.05.", "hours": 8 }
+```
+
+**Response `use`:**
+```json
+{ "access": true, "room_id": "serverroom", "message": "Zugang gewährt", "expires_at": "2026-05-18T17:00:00" }
+```
+
+---
+
 ### Keycloak Admin API (SSO-Management)
 
 Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
@@ -642,7 +678,7 @@ Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
 | `PATCH` | `/admin/kc/users/{kc_id}` | KC-Benutzer aktualisieren |
 | `POST` | `/admin/kc/users/{kc_id}/disable` | Benutzer in Keycloak sperren |
 | `POST` | `/admin/kc/users/{kc_id}/enable` | Benutzer in Keycloak entsperren |
-| `POST` | `/admin/kc/users/{kc_id}/reset-password` | Passwort zurücksetzen |
+| `POST` | `/admin/kc/users/{kc_id}/reset-password` | Passwort zurücksetzen (optional temporär) |
 | `DELETE` | `/admin/kc/users/{kc_id}` | Benutzer aus Keycloak löschen |
 | `GET` | `/admin/kc/users/{kc_id}/sessions` | Aktive Sessions eines Benutzers |
 | `DELETE` | `/admin/kc/users/{kc_id}/sessions` | Alle Sessions eines Benutzers beenden |
@@ -671,6 +707,14 @@ Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
 3. Backend extrahiert Public-ID (erste 12 Zeichen) → findet Benutzer
 4. Validiert OTP gegen YubiCloud
 5. Prüft Raumberechtigung
+
+### Gast-Zugang (Einmal-Link)
+
+1. Admin generiert Link im Dashboard → "Gast-Link" im SSO-Tab
+2. Link enthält UUID: `POST /access/guest/use/{uuid}`
+3. Backend prüft: existiert, nicht verwendet, nicht abgelaufen
+4. Zugang wird geloggt, Token als verwendet markiert
+5. Link ist danach ungültig
 
 ### OTP-Zugang (Fallback / Gäste)
 
@@ -737,12 +781,15 @@ workmate-access/
 │       │   ├── access.py
 │       │   ├── nfc_chips.py
 │       │   ├── yubikeys.py
+│       │   ├── guest.py           ← Gast-Token Generierung + Einlösung
 │       │   └── keycloak_admin.py  ← Keycloak Admin API Proxy (SSO-Tab)
 │       ├── services/
 │       │   ├── access_service.py
 │       │   ├── otp_service.py
 │       │   ├── yubikey_service.py
 │       │   └── keycloak_admin.py  ← Admin API Client (client_credentials)
+│       ├── models/
+│       │   └── guest_token.py     ← Gast-Token Modell
 │       ├── static/
 │       │   ├── index.html      ← Admin-Dashboard + Landing Page (Tailwind, PKCE)
 │       │   └── keycloak.js     ← keycloak-js@26.2.4 (gebündelt)
