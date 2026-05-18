@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     KEYCLOAK_CLIENT_ID: str = ""
     KEYCLOAK_CLIENT_SECRET: str = ""
     KEYCLOAK_REALM: str = "kit"
+    # Keycloak Admin Service Account (client_credentials)
+    KEYCLOAK_ADMIN_CLIENT_ID: str = "workmate-admin"
+    KEYCLOAK_ADMIN_CLIENT_SECRET: str = ""
 
     @property
     def keycloak_base_url(self) -> str:

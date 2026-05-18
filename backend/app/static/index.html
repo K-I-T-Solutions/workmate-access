@@ -384,6 +384,10 @@
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 Zugangskontrolle
             </div>
+            <div class="sidebar-link" id="nav-sso" onclick="switchTab('sso', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                SSO / Keycloak
+            </div>
         </nav>
 
         <div class="px-3 py-4 border-t border-slate-700">
@@ -570,6 +574,52 @@
                     <button onclick="verifyCard()" class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-card-result"></div>
                 </div>
+            </div>
+        </section>
+
+        <!-- SSO / KEYCLOAK -->
+        <section id="tab-sso" class="tab-content p-6" style="display:none">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">SSO / Keycloak</h1>
+                    <p class="text-slate-500 text-sm mt-0.5">Benutzer und Sessions direkt über die Keycloak Admin API verwalten</p>
+                </div>
+                <button onclick="openKcUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Neuer KC-Benutzer
+                </button>
+            </div>
+
+            <!-- Suchleiste -->
+            <div class="flex gap-3 mb-4">
+                <input id="kc-search" type="text" placeholder="Benutzer suchen…" oninput="loadKcUsers()"
+                    class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <button onclick="loadKcUsers()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+                    Aktualisieren
+                </button>
+            </div>
+
+            <!-- Benutzer-Tabelle -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead><tr>
+                            <th>Benutzername</th><th>E-Mail</th><th>Name</th><th>Status</th><th>Sessions</th><th>Rollen</th><th>Aktionen</th>
+                        </tr></thead>
+                        <tbody id="kc-users-table">
+                            <tr><td colspan="7" class="empty-state">Wird geladen…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aktive Sessions (Realm-Übersicht) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-semibold text-slate-800 text-sm">Aktive Sessions</h2>
+                    <button onclick="loadKcUsers()" class="text-xs text-indigo-600 hover:underline">Aktualisieren</button>
+                </div>
+                <div id="kc-sessions-list" class="text-sm text-slate-500">Wähle einen Benutzer um Sessions anzuzeigen.</div>
             </div>
         </section>
 
@@ -782,6 +832,74 @@
     </div>
 </dialog>
 
+<!-- Dialog: Keycloak Benutzer anlegen -->
+<dialog id="kc-user-dialog">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-4">Keycloak-Benutzer anlegen</h2>
+        <form id="kc-user-form" class="space-y-3" onsubmit="saveKcUser(event)">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Vorname</label>
+                    <input id="kcu-firstname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Nachname</label>
+                    <input id="kcu-lastname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Benutzername *</label>
+                <input id="kcu-username" type="text" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">E-Mail *</label>
+                <input id="kcu-email" type="email" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Temporäres Passwort *</label>
+                <input id="kcu-password" type="password" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input id="kcu-temp" type="checkbox" checked class="rounded">
+                Benutzer muss Passwort beim ersten Login ändern
+            </label>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 mt-4">
+                <button type="button" onclick="document.getElementById('kc-user-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Anlegen</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- Dialog: Sessions anzeigen -->
+<dialog id="kc-sessions-dialog">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Aktive Sessions</h2>
+        <p id="kc-sessions-dialog-user" class="text-sm text-slate-500 mb-4"></p>
+        <div id="kc-sessions-dialog-body" class="space-y-2 max-h-72 overflow-y-auto"></div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
+            <button onclick="logoutKcUserFromDialog()" class="btn-sm btn-danger">Alle abmelden</button>
+            <button onclick="document.getElementById('kc-sessions-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Schließen</button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Dialog: Rolle zuweisen -->
+<dialog id="kc-role-dialog">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-4">Rolle zuweisen</h2>
+        <p id="kc-role-dialog-user" class="text-sm text-slate-500 mb-3"></p>
+        <div>
+            <label class="block text-xs font-medium text-slate-500 mb-1">Rolle</label>
+            <select id="kc-role-select" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
+            <button onclick="document.getElementById('kc-role-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+            <button onclick="saveKcRole()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Zuweisen</button>
+        </div>
+    </div>
+</dialog>
+
 <script>
 const API = '/api/v1';
 let keycloak = null;
@@ -952,6 +1070,7 @@ function switchTab(tab, el) {
     else if (tab === 'rooms') loadRooms();
     else if (tab === 'permissions') loadPermissions();
     else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
+    else if (tab === 'sso') loadKcUsers();
     if (tab !== 'logs') stopLogRefresh();
 }
 
@@ -1627,6 +1746,151 @@ async function verifyCard() {
         document.getElementById('verify-card-result').innerHTML =
             `<div class="verify-result verify-denied"><strong>Fehler:</strong> ${esc(e.message)}</div>`;
     }
+}
+
+// ==================== SSO / KEYCLOAK ADMIN ====================
+let _kcRolesCache = null;
+let _kcSessionsCurrentUser = null;
+
+async function loadKcUsers() {
+    const search = document.getElementById('kc-search')?.value || '';
+    const tbody = document.getElementById('kc-users-table');
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Wird geladen…</td></tr>';
+    try {
+        const users = await api('/admin/kc/users?search=' + encodeURIComponent(search));
+        if (!users) return;
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Keine Keycloak-Benutzer gefunden</td></tr>';
+            return;
+        }
+        tbody.innerHTML = users.map(u => {
+            const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || '—';
+            const enabled = u.enabled !== false;
+            const statusBadge = enabled
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Aktiv</span>'
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Deaktiviert</span>';
+            const toggleBtn = enabled
+                ? `<button class="btn-sm btn-outline-amber" onclick="disableKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Deaktivieren">${IC.trash} Sperren</button>`
+                : `<button class="btn-sm btn-outline-emerald" onclick="enableKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Aktivieren">${IC.edit} Entsperren</button>`;
+            return `<tr>
+                <td><code>${esc(u.username)}</code></td>
+                <td>${esc(u.email || '—')}</td>
+                <td>${esc(name)}</td>
+                <td>${statusBadge}</td>
+                <td><button class="btn-sm btn-outline" onclick="openKcSessions('${esc(u.id)}', '${esc(u.username)}')">Sessions</button></td>
+                <td><button class="btn-sm btn-outline" onclick="openKcRoleDialog('${esc(u.id)}', '${esc(u.username)}')">Rollen</button></td>
+                <td class="actions">${toggleBtn}
+                    <button class="btn-sm btn-danger" onclick="deleteKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Löschen">${IC.trash} Löschen</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state text-red-500">${esc(e.message)}</td></tr>`; }
+}
+
+function openKcUserDialog() {
+    document.getElementById('kcu-firstname').value = '';
+    document.getElementById('kcu-lastname').value = '';
+    document.getElementById('kcu-username').value = '';
+    document.getElementById('kcu-email').value = '';
+    document.getElementById('kcu-password').value = '';
+    document.getElementById('kcu-temp').checked = true;
+    document.getElementById('kc-user-dialog').showModal();
+}
+
+async function saveKcUser(e) {
+    e.preventDefault();
+    const body = {
+        username: document.getElementById('kcu-username').value.trim(),
+        email: document.getElementById('kcu-email').value.trim(),
+        first_name: document.getElementById('kcu-firstname').value.trim(),
+        last_name: document.getElementById('kcu-lastname').value.trim(),
+        password: document.getElementById('kcu-password').value,
+        temporary_password: document.getElementById('kcu-temp').checked,
+    };
+    const res = await api('/admin/kc/users', { method: 'POST', body: JSON.stringify(body) });
+    if (!res) return;
+    showSuccess(`Benutzer "${body.username}" in Keycloak angelegt`);
+    document.getElementById('kc-user-dialog').close();
+    loadKcUsers();
+}
+
+async function disableKcUser(kcId, username) {
+    if (!confirm(`"${username}" in Keycloak sperren?`)) return;
+    const res = await api(`/admin/kc/users/${kcId}/disable`, { method: 'POST' });
+    if (res !== null && res !== undefined) { showSuccess(`${username} gesperrt`); loadKcUsers(); }
+}
+
+async function enableKcUser(kcId, username) {
+    const res = await api(`/admin/kc/users/${kcId}/enable`, { method: 'POST' });
+    if (res !== null && res !== undefined) { showSuccess(`${username} entsperrt`); loadKcUsers(); }
+}
+
+async function deleteKcUser(kcId, username) {
+    confirmAction(`Keycloak-Benutzer "${username}" endgültig löschen?`, async () => {
+        const res = await api(`/admin/kc/users/${kcId}`, { method: 'DELETE' });
+        if (res !== undefined) { showSuccess(`${username} gelöscht`); loadKcUsers(); }
+    });
+}
+
+async function openKcSessions(kcId, username) {
+    _kcSessionsCurrentUser = kcId;
+    document.getElementById('kc-sessions-dialog-user').textContent = `Benutzer: ${username}`;
+    const body = document.getElementById('kc-sessions-dialog-body');
+    body.innerHTML = '<p class="text-slate-400 text-sm">Wird geladen…</p>';
+    document.getElementById('kc-sessions-dialog').showModal();
+    try {
+        const sessions = await api(`/admin/kc/users/${kcId}/sessions`);
+        if (!sessions) return;
+        if (sessions.length === 0) {
+            body.innerHTML = '<p class="text-slate-400 text-sm">Keine aktiven Sessions.</p>';
+            return;
+        }
+        body.innerHTML = sessions.map(s => `
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <div>
+                    <div class="text-xs font-mono text-slate-600">${esc(s.ipAddress || '—')}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">Start: ${s.start ? new Date(s.start).toLocaleString('de-DE') : '—'}</div>
+                    <div class="text-xs text-slate-400">Zuletzt: ${s.lastAccess ? new Date(s.lastAccess).toLocaleString('de-DE') : '—'}</div>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Aktiv</span>
+            </div>`).join('');
+    } catch(e) { body.innerHTML = `<p class="text-red-500 text-sm">${esc(e.message)}</p>`; }
+}
+
+async function logoutKcUserFromDialog() {
+    if (!_kcSessionsCurrentUser) return;
+    const res = await api(`/admin/kc/users/${_kcSessionsCurrentUser}/sessions`, { method: 'DELETE' });
+    if (res !== undefined) {
+        showSuccess('Alle Sessions beendet');
+        document.getElementById('kc-sessions-dialog').close();
+        loadKcUsers();
+    }
+}
+
+async function openKcRoleDialog(kcId, username) {
+    document.getElementById('kc-role-dialog-user').textContent = `Benutzer: ${username}`;
+    const sel = document.getElementById('kc-role-select');
+    sel.dataset.kcId = kcId;
+    sel.innerHTML = '<option>Wird geladen…</option>';
+    document.getElementById('kc-role-dialog').showModal();
+    try {
+        if (!_kcRolesCache) _kcRolesCache = await api('/admin/kc/roles');
+        const userRoles = await api(`/admin/kc/users/${kcId}/roles`);
+        const userRoleNames = new Set((userRoles || []).map(r => r.name));
+        sel.innerHTML = (_kcRolesCache || [])
+            .filter(r => !r.name.startsWith('default-roles'))
+            .map(r => `<option value="${esc(r.name)}" ${userRoleNames.has(r.name) ? 'disabled' : ''}>${esc(r.name)}${userRoleNames.has(r.name) ? ' ✓' : ''}</option>`)
+            .join('');
+    } catch(e) { sel.innerHTML = `<option>Fehler: ${esc(e.message)}</option>`; }
+}
+
+async function saveKcRole() {
+    const sel = document.getElementById('kc-role-select');
+    const kcId = sel.dataset.kcId;
+    const roleName = sel.value;
+    if (!kcId || !roleName) return;
+    const res = await api(`/admin/kc/users/${kcId}/roles`, { method: 'POST', body: JSON.stringify({ role_name: roleName }) });
+    if (res) { showSuccess(`Rolle "${roleName}" zugewiesen`); document.getElementById('kc-role-dialog').close(); _kcRolesCache = null; }
 }
 
 // ==================== INIT ====================
