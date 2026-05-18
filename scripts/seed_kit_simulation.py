@@ -2,50 +2,36 @@
 """
 seed_kit_simulation.py — K.I.T. Solutions Simulations-Daten
 
-Importiert Räume, Benutzer, NFC-Chips und Berechtigungen in workmate-access
-sowie Abteilungen und Mitarbeiter in workmate-os.
+Schreibt Räume, Benutzer, NFC-Chips und Berechtigungen direkt in die Datenbank.
 
 Verwendung:
-    python scripts/seed_kit_simulation.py [--dry-run] [--skip-access] [--skip-os]
+    python scripts/seed_kit_simulation.py [--dry-run]
 
 Konfiguration via Umgebungsvariablen:
-    ACCESS_URL          workmate-access API  (default: http://localhost:8000)
-    OS_URL              workmate-os API      (default: http://localhost:8001)
-    KEYCLOAK_URL        (default: aus .env)
-    KEYCLOAK_REALM      (default: kit)
-    KC_CLIENT_ID        Service-Account-Client für workmate-access (default: workmate-admin)
-    KC_CLIENT_SECRET    Service-Account-Secret
-    OS_TOKEN            Bearer-Token für workmate-os (optional, falls anderer Client)
+    ACCESS_DB   postgresql://workmate:workmate@172.19.0.31:5432/workmate_access
+    OS_DB       postgresql://workmate:workmate@172.19.0.31:5432/workmate_os  (optional)
 """
 
 import os
 import sys
 import uuid
 import argparse
-import httpx
-from datetime import date
+from datetime import datetime
+
+from sqlalchemy import create_engine, text
 
 # ─── ANSI Farben ─────────────────────────────────────────────────────────────
-G = "\033[92m"   # grün
-Y = "\033[93m"   # gelb
-R = "\033[91m"   # rot
-B = "\033[94m"   # blau
-DIM = "\033[2m"
-RST = "\033[0m"
+G = "\033[92m"; Y = "\033[93m"; R = "\033[91m"; B = "\033[94m"
+DIM = "\033[2m"; RST = "\033[0m"
 
 def ok(msg):   print(f"  {G}✓{RST} {msg}")
 def skip(msg): print(f"  {Y}→{RST} {DIM}{msg}{RST}")
-def err(msg):  print(f"  {R}✗{RST} {msg}", file=sys.stderr)
+def err(msg):  print(f"  {R}✗{RST} {msg}")
 def head(msg): print(f"\n{B}▶ {msg}{RST}")
 
 # ─── Konfiguration ────────────────────────────────────────────────────────────
-ACCESS_URL       = os.getenv("ACCESS_URL",       "http://localhost:8000")
-OS_URL           = os.getenv("OS_URL",           "http://localhost:8001")
-KEYCLOAK_URL     = os.getenv("KEYCLOAK_URL",     "https://login.intern.phudevelopement.xyz")
-KEYCLOAK_REALM   = os.getenv("KEYCLOAK_REALM",   "kit")
-KC_CLIENT_ID     = os.getenv("KC_CLIENT_ID",     "workmate-admin")
-KC_CLIENT_SECRET = os.getenv("KC_CLIENT_SECRET", "")
-OS_TOKEN_ENV     = os.getenv("OS_TOKEN",         "")
+ACCESS_DB = os.getenv("ACCESS_DB", "postgresql://workmate:workmate@172.19.0.31:5432/workmate_access")
+OS_DB     = os.getenv("OS_DB",     "postgresql://workmate:workmate@172.19.0.31:5432/workmate_os")
 
 # ─── Simulation-Daten ─────────────────────────────────────────────────────────
 
@@ -54,234 +40,164 @@ ROOM_GROUPS = [
     {"name": "Fahrzeuge", "color": "#f59e0b"},
 ]
 
-# ag_id → {id, name, group, description}
 ROOMS = {
-    "ag_001": {"id": "buro-haupteingang",    "name": "Büro Hauptzugang",           "description": "Beatusstraße 56 – Haupteingang",     "group": "Büroräume"},
-    "ag_002": {"id": "serverraum",           "name": "Serverraum",                 "description": "Zugang nur für technisches Personal", "group": "Büroräume"},
-    "ag_003": {"id": "werkstatt-fabian",     "name": "Werkstatt Fabian",           "description": "Fabians Werkstatt",                  "group": "Büroräume"},
-    "ag_004": {"id": "content-studio",       "name": "Content Studio",             "description": "Foto / Video / Stream",              "group": "Büroräume"},
-    "ag_005": {"id": "fahrzeug-pool",        "name": "Fahrzeug Pool KO-IT-001",    "description": "Toyota Proace City – Poolwagen",      "group": "Fahrzeuge"},
-    "ag_006": {"id": "fahrzeug-etienne",     "name": "Fahrzeug Etienne KO-IT-104", "description": "VW Transporter T6.1 – Etienne",      "group": "Fahrzeuge"},
-    "ag_007": {"id": "fahrzeug-sascha",      "name": "Fahrzeug Sascha KO-IT-105",  "description": "BYD Seal 6 DM-i – Sascha",          "group": "Fahrzeuge"},
+    "ag_001": {"id": "buro-haupteingang",  "name": "Büro Hauptzugang",           "description": "Beatusstraße 56 – Haupteingang",     "group": "Büroräume"},
+    "ag_002": {"id": "serverraum",         "name": "Serverraum",                 "description": "Zugang nur für technisches Personal", "group": "Büroräume"},
+    "ag_003": {"id": "werkstatt-fabian",   "name": "Werkstatt Fabian",           "description": "Fabians Werkstatt",                  "group": "Büroräume"},
+    "ag_004": {"id": "content-studio",     "name": "Content Studio",             "description": "Foto / Video / Stream",              "group": "Büroräume"},
+    "ag_005": {"id": "fahrzeug-pool",      "name": "Fahrzeug Pool KO-IT-001",    "description": "Toyota Proace City – Poolwagen",      "group": "Fahrzeuge"},
+    "ag_006": {"id": "fahrzeug-etienne",   "name": "Fahrzeug Etienne KO-IT-104", "description": "VW Transporter T6.1 – Etienne",      "group": "Fahrzeuge"},
+    "ag_007": {"id": "fahrzeug-sascha",    "name": "Fahrzeug Sascha KO-IT-105",  "description": "BYD Seal 6 DM-i – Sascha",          "group": "Fahrzeuge"},
 }
 
 USERS = [
-    {
-        "id": "KIT-0001", "workmate_id": "WM-100",
-        "first_name": "Joshua",   "last_name": "Kuhrau",
-        "username": "joshua.kuhrau",   "display_name": "Joshua Kuhrau",
-        "email": "joshua@kit-it-koblenz.de",  "phone": "+491622654262",
-        "role": "admin",  "employment_type": "OWNER",
-        "department": "Geschäftsführung",  "hire_date": "2025-05-01",
-        "smartcard": "SC-KIT-100",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_002", "ag_003", "ag_004", "ag_005"],
-    },
-    {
-        "id": "KIT-0002", "workmate_id": "WM-101",
-        "first_name": "Jessica",  "last_name": "Kuhrau",
-        "username": "jessica.kuhrau",  "display_name": "Jessica Kuhrau",
-        "email": "jessica@kit-it-koblenz.de",  "phone": "+491620000002",
-        "role": "admin",  "employment_type": "PARTNER",
-        "department": "Operations",  "hire_date": "2025-05-01",
-        "smartcard": "SC-KIT-101",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_004", "ag_005"],
-    },
-    {
-        "id": "KIT-0003", "workmate_id": "WM-102",
-        "first_name": "Lena",     "last_name": "Hoffmann",
-        "username": "lena.hoffmann",   "display_name": "Lena Hoffmann",
-        "email": "lena@kit-it-koblenz.de",  "phone": "+491620000003",
-        "role": "user",  "employment_type": "SHAREHOLDER",
-        "department": "Finance",  "hire_date": "2027-01-01",
-        "smartcard": "SC-KIT-102",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_004", "ag_005"],
-    },
-    {
-        "id": "KIT-0004", "workmate_id": "WM-103",
-        "first_name": "Fabian",   "last_name": "Weber",
-        "username": "fabian.weber",    "display_name": "Fabian Weber",
-        "email": "fabian@kit-it-koblenz.de",  "phone": "+491620000004",
-        "role": "admin",  "employment_type": "SHAREHOLDER",
-        "department": "Technology",  "hire_date": "2027-01-01",
-        "smartcard": "SC-KIT-103",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_002", "ag_003", "ag_004", "ag_005"],
-    },
-    {
-        "id": "KIT-0005", "workmate_id": "WM-104",
-        "first_name": "Etienne",  "last_name": "Göken",
-        "username": "etienne.goeken",  "display_name": "Etienne Göken",
-        "email": "etienne@kit-it-koblenz.de",  "phone": "+491620000005",
-        "role": "user",  "employment_type": "EMPLOYEE",
-        "department": "Facility & Event IT",  "hire_date": "2031-05-12",
-        "smartcard": "SC-KIT-104",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_004", "ag_005", "ag_006"],
-    },
-    {
-        "id": "KIT-0006", "workmate_id": "WM-105",
-        "first_name": "Sascha",   "last_name": "Müller",
-        "username": "sascha.mueller",  "display_name": "Sascha Müller",
-        "email": "sascha@kit-it-koblenz.de",  "phone": "+491620000006",
-        "role": "user",  "employment_type": "EMPLOYEE",
-        "department": "Event IT",  "hire_date": "2028-03-01",
-        "smartcard": "SC-KIT-105",  "status": "ACTIVE",
-        "access_groups": ["ag_001", "ag_004", "ag_005", "ag_007"],
-    },
-    {
-        "id": "KIT-0007", "workmate_id": "WM-106",
-        "first_name": "Tobias",   "last_name": "Wenzel",
-        "username": "tobias.wenzel",   "display_name": "Tobias Wenzel",
-        "email": "tobias@kit-it-koblenz.de",  "phone": "+491620000007",
-        "role": "user",  "employment_type": "WERKSTUDENT",
-        "department": "IT Außendienst",  "hire_date": "2031-05-19",
-        "smartcard": "SC-KIT-106",  "status": "PENDING",
-        "access_groups": [],  # PENDING — noch keine aktiven Berechtigungen
-    },
-    {
-        "id": "KIT-0008", "workmate_id": "WM-107",
-        "first_name": "Amir",     "last_name": "Hosseini",
-        "username": "amir.hosseini",   "display_name": "Amir Hosseini",
-        "email": "amir@kit-it-koblenz.de",  "phone": "+491620000008",
-        "role": "user",  "employment_type": "FREELANCER",
-        "department": "Technology",  "hire_date": "2031-05-19",
-        "smartcard": None,  "status": "PENDING",
-        "access_groups": [],  # PENDING + kein Smartcard
-    },
-    {
-        "id": "KIT-0009", "workmate_id": "WM-108",
-        "first_name": "Gülcan",   "last_name": "Yilmaz",
-        "username": "guelcan.yilmaz",  "display_name": "Gülcan Yilmaz",
-        "email": "guelcan@kit-it-koblenz.de",  "phone": "+491620000009",
-        "role": "user",  "employment_type": "PRAKTIKUM",
-        "department": "Marketing",  "hire_date": "2031-05-14",
-        "smartcard": "SC-KIT-108",  "status": "PENDING",
-        "access_groups": [],  # PENDING
-    },
+    {"id": "KIT-0001", "workmate_id": "WM-100", "username": "joshua.kuhrau",  "display_name": "Joshua Kuhrau",   "phone": "+491622654262", "role": "admin", "smartcard": "SC-KIT-100", "status": "ACTIVE",   "email": "joshua@kit-it-koblenz.de",  "access_groups": ["ag_001","ag_002","ag_003","ag_004","ag_005"]},
+    {"id": "KIT-0002", "workmate_id": "WM-101", "username": "jessica.kuhrau", "display_name": "Jessica Kuhrau",  "phone": "+491620000002", "role": "admin", "smartcard": "SC-KIT-101", "status": "ACTIVE",   "email": "jessica@kit-it-koblenz.de", "access_groups": ["ag_001","ag_004","ag_005"]},
+    {"id": "KIT-0003", "workmate_id": "WM-102", "username": "lena.hoffmann",  "display_name": "Lena Hoffmann",   "phone": "+491620000003", "role": "user",  "smartcard": "SC-KIT-102", "status": "ACTIVE",   "email": "lena@kit-it-koblenz.de",    "access_groups": ["ag_001","ag_004","ag_005"]},
+    {"id": "KIT-0004", "workmate_id": "WM-103", "username": "fabian.weber",   "display_name": "Fabian Weber",    "phone": "+491620000004", "role": "admin", "smartcard": "SC-KIT-103", "status": "ACTIVE",   "email": "fabian@kit-it-koblenz.de",  "access_groups": ["ag_001","ag_002","ag_003","ag_004","ag_005"]},
+    {"id": "KIT-0005", "workmate_id": "WM-104", "username": "etienne.goeken", "display_name": "Etienne Göken",   "phone": "+491620000005", "role": "user",  "smartcard": "SC-KIT-104", "status": "ACTIVE",   "email": "etienne@kit-it-koblenz.de", "access_groups": ["ag_001","ag_004","ag_005","ag_006"]},
+    {"id": "KIT-0006", "workmate_id": "WM-105", "username": "sascha.mueller", "display_name": "Sascha Müller",   "phone": "+491620000006", "role": "user",  "smartcard": "SC-KIT-105", "status": "ACTIVE",   "email": "sascha@kit-it-koblenz.de",  "access_groups": ["ag_001","ag_004","ag_005","ag_007"]},
+    {"id": "KIT-0007", "workmate_id": "WM-106", "username": "tobias.wenzel",  "display_name": "Tobias Wenzel",   "phone": "+491620000007", "role": "user",  "smartcard": "SC-KIT-106", "status": "PENDING",  "email": "tobias@kit-it-koblenz.de",  "access_groups": []},
+    {"id": "KIT-0008", "workmate_id": "WM-107", "username": "amir.hosseini",  "display_name": "Amir Hosseini",   "phone": "+491620000008", "role": "user",  "smartcard": None,          "status": "PENDING",  "email": "amir@kit-it-koblenz.de",    "access_groups": []},
+    {"id": "KIT-0009", "workmate_id": "WM-108", "username": "guelcan.yilmaz", "display_name": "Gülcan Yilmaz",   "phone": "+491620000009", "role": "user",  "smartcard": "SC-KIT-108", "status": "PENDING",  "email": "guelcan@kit-it-koblenz.de", "access_groups": []},
 ]
 
-EMPLOYMENT_TYPE_MAP = {
-    "OWNER":       "fulltime",
-    "PARTNER":     "fulltime",
-    "SHAREHOLDER": "fulltime",
-    "EMPLOYEE":    "fulltime",
-    "WERKSTUDENT": "parttime",
-    "FREELANCER":  "external",
-    "PRAKTIKUM":   "intern",
+DEPARTMENTS = [
+    "Geschäftsführung", "Operations", "Finance", "Technology",
+    "Facility & Event IT", "Event IT", "IT Außendienst", "Marketing",
+]
+
+EMPLOYMENT_MAP = {
+    "KIT-0001": "OWNER",       "KIT-0002": "PARTNER",
+    "KIT-0003": "SHAREHOLDER", "KIT-0004": "SHAREHOLDER",
+    "KIT-0005": "EMPLOYEE",    "KIT-0006": "EMPLOYEE",
+    "KIT-0007": "WERKSTUDENT", "KIT-0008": "FREELANCER",
+    "KIT-0009": "PRAKTIKUM",
 }
 
-DEPARTMENTS = list({u["department"] for u in USERS})
+DEPT_OF_USER = {
+    "KIT-0001": "Geschäftsführung",  "KIT-0002": "Operations",
+    "KIT-0003": "Finance",           "KIT-0004": "Technology",
+    "KIT-0005": "Facility & Event IT", "KIT-0006": "Event IT",
+    "KIT-0007": "IT Außendienst",    "KIT-0008": "Technology",
+    "KIT-0009": "Marketing",
+}
 
-# ─── Token-Beschaffung ────────────────────────────────────────────────────────
+HIRE_DATE = {
+    "KIT-0001": "2025-05-01", "KIT-0002": "2025-05-01",
+    "KIT-0003": "2027-01-01", "KIT-0004": "2027-01-01",
+    "KIT-0005": "2031-05-12", "KIT-0006": "2028-03-01",
+    "KIT-0007": "2031-05-19", "KIT-0008": "2031-05-19",
+    "KIT-0009": "2031-05-14",
+}
 
-def fetch_access_token() -> str:
-    if not KC_CLIENT_SECRET:
-        print(f"{R}KC_CLIENT_SECRET nicht gesetzt.{RST}")
-        print(f"  Setze: export KC_CLIENT_SECRET=<secret>")
-        sys.exit(1)
+EMPLOYMENT_TYPE_OS = {
+    "OWNER": "fulltime", "PARTNER": "fulltime", "SHAREHOLDER": "fulltime",
+    "EMPLOYEE": "fulltime", "WERKSTUDENT": "parttime",
+    "FREELANCER": "external", "PRAKTIKUM": "intern",
+}
 
-    url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
-    resp = httpx.post(url, data={
-        "grant_type":    "client_credentials",
-        "client_id":     KC_CLIENT_ID,
-        "client_secret": KC_CLIENT_SECRET,
-    }, timeout=10)
-    if resp.status_code != 200:
-        print(f"{R}Keycloak-Token-Fehler: {resp.status_code} {resp.text}{RST}")
-        sys.exit(1)
-    token = resp.json()["access_token"]
-    ok(f"Keycloak-Token erhalten (Client: {KC_CLIENT_ID})")
-    return token
+# ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
-# ─── API-Helfer ───────────────────────────────────────────────────────────────
+def kc_uuid(user_id: str) -> str:
+    """Deterministischer Platzhalter-UUID bis echte KC-UUIDs gesetzt werden."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"kit.{user_id}"))
 
-def api(client: httpx.Client, method: str, path: str, **kwargs):
-    resp = client.request(method, path, **kwargs)
-    return resp
-
-def post_or_skip(client: httpx.Client, path: str, body: dict, label: str, dry_run: bool) -> bool:
-    if dry_run:
-        skip(f"[dry-run] POST {path} — {label}")
-        return True
-    resp = api(client, "POST", path, json=body)
-    if resp.status_code in (200, 201):
-        ok(label)
-        return True
-    elif resp.status_code == 409 or "already" in resp.text.lower() or "existiert" in resp.text.lower():
-        skip(f"Bereits vorhanden: {label}")
-        return False
-    else:
-        err(f"{label} → {resp.status_code}: {resp.text[:120]}")
-        return False
+def exists(conn, table: str, col: str, val: str) -> bool:
+    return conn.execute(text(f"SELECT 1 FROM {table} WHERE {col} = :v"), {"v": val}).fetchone() is not None
 
 # ─── workmate-access seeden ───────────────────────────────────────────────────
 
-def seed_access(token: str, dry_run: bool):
-    base = f"{ACCESS_URL}/api/v1"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+def seed_access(engine, dry_run: bool):
+    now = datetime.utcnow()
+    group_name_to_id: dict[str, int] = {}
 
-    with httpx.Client(headers=headers, timeout=15) as c:
+    with engine.begin() as conn:
 
         # 1. Raum-Gruppen
         head("Raum-Gruppen")
-        group_name_to_id: dict[str, int] = {}
-
-        existing = c.get(f"{base}/room-groups/").json() if not dry_run else []
-        for g in existing:
-            group_name_to_id[g["name"]] = g["id"]
-
         for rg in ROOM_GROUPS:
-            if rg["name"] in group_name_to_id:
+            row = conn.execute(text("SELECT id FROM room_groups WHERE name = :n"), {"n": rg["name"]}).fetchone()
+            if row:
+                group_name_to_id[rg["name"]] = row[0]
                 skip(f"Bereits vorhanden: {rg['name']}")
                 continue
-            resp = api(c, "POST", f"{base}/room-groups/", json=rg)
-            if resp.status_code == 201:
-                group_name_to_id[rg["name"]] = resp.json()["id"]
-                ok(f"Raum-Gruppe: {rg['name']}")
-            elif dry_run:
+            if dry_run:
                 skip(f"[dry-run] {rg['name']}")
-            else:
-                err(f"Raum-Gruppe {rg['name']}: {resp.status_code}")
+                continue
+            r = conn.execute(text(
+                "INSERT INTO room_groups (name, color, created_at) VALUES (:n, :c, :t) RETURNING id"
+            ), {"n": rg["name"], "c": rg["color"], "t": now})
+            group_name_to_id[rg["name"]] = r.fetchone()[0]
+            ok(f"Raum-Gruppe: {rg['name']}")
 
         # 2. Räume
         head("Räume")
         for ag_id, room in ROOMS.items():
-            group_id = group_name_to_id.get(room["group"])
-            post_or_skip(c, f"{base}/rooms/", {
-                "id":          room["id"],
-                "name":        room["name"],
-                "description": room["description"],
-                "group_id":    group_id,
-            }, f"Raum: {room['name']}", dry_run)
+            if exists(conn, "rooms", "id", room["id"]):
+                skip(f"Bereits vorhanden: {room['name']}")
+                continue
+            gid = group_name_to_id.get(room["group"])
+            if dry_run:
+                skip(f"[dry-run] Raum: {room['name']}")
+                continue
+            conn.execute(text("""
+                INSERT INTO rooms (id, name, description, group_id, is_active, created_at)
+                VALUES (:id, :name, :desc, :gid, true, :t)
+            """), {"id": room["id"], "name": room["name"], "desc": room["description"], "gid": gid, "t": now})
+            ok(f"Raum: {room['name']}")
 
         # 3. Benutzer
         head("Benutzer")
         for u in USERS:
-            # Deterministischer Platzhalter für Keycloak-UUID (ersetzbar)
-            kc_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"kit.{u['id']}"))
-            post_or_skip(c, f"{base}/users/", {
-                "id":           u["id"],
-                "workmate_id":  u["workmate_id"],
-                "keycloak_id":  kc_uuid,
-                "username":     u["username"],
-                "display_name": u["display_name"],
-                "phone_number": u["phone"],
-                "role":         u["role"],
-            }, f"User: {u['display_name']} ({u['id']} / {u['workmate_id']})", dry_run)
+            if exists(conn, "users", "id", u["id"]):
+                skip(f"Bereits vorhanden: {u['display_name']}")
+                continue
+            if dry_run:
+                skip(f"[dry-run] User: {u['display_name']} ({u['id']} / {u['workmate_id']})")
+                continue
+            conn.execute(text("""
+                INSERT INTO users
+                    (id, workmate_id, keycloak_id, username, display_name,
+                     phone_number, role, is_active, created_at, updated_at)
+                VALUES
+                    (:id, :wid, :kc, :uname, :dname,
+                     :phone, :role, :active, :t, :t)
+            """), {
+                "id":     u["id"],
+                "wid":    u["workmate_id"],
+                "kc":     kc_uuid(u["id"]),
+                "uname":  u["username"],
+                "dname":  u["display_name"],
+                "phone":  u["phone"],
+                "role":   u["role"],
+                "active": u["status"] == "ACTIVE",
+                "t":      now,
+            })
+            ok(f"User: {u['display_name']} ({u['id']} / {u['workmate_id']})")
 
-        # 4. NFC-Chips (Smartcards) — nur ACTIVE mit Karte
+        # 4. NFC-Chips
         head("NFC-Chips (Smartcards)")
         for u in USERS:
-            if not u["smartcard"] or u["status"] != "ACTIVE":
-                if u["smartcard"] is None:
-                    skip(f"Kein Smartcard: {u['display_name']} (Freelancer)")
-                elif u["status"] != "ACTIVE":
-                    skip(f"PENDING — kein Chip angelegt: {u['display_name']}")
+            if not u["smartcard"]:
+                skip(f"Kein Smartcard: {u['display_name']} (Freelancer)")
                 continue
-            post_or_skip(c, f"{base}/users/{u['id']}/chips", {
-                "chip_uid": u["smartcard"],
-                "label":    f"Smartcard {u['smartcard']}",
-            }, f"Chip {u['smartcard']} → {u['display_name']}", dry_run)
+            if u["status"] != "ACTIVE":
+                skip(f"PENDING — kein Chip angelegt: {u['display_name']}")
+                continue
+            if exists(conn, "nfc_chips", "chip_uid", u["smartcard"]):
+                skip(f"Bereits vorhanden: {u['smartcard']}")
+                continue
+            if dry_run:
+                skip(f"[dry-run] Chip {u['smartcard']} → {u['display_name']}")
+                continue
+            conn.execute(text("""
+                INSERT INTO nfc_chips (user_id, chip_uid, label, is_active, created_at)
+                VALUES (:uid, :chip, :label, true, :t)
+            """), {"uid": u["id"], "chip": u["smartcard"], "label": f"Smartcard {u['smartcard']}", "t": now})
+            ok(f"Chip {u['smartcard']} → {u['display_name']}")
 
-        # 5. Berechtigungen — nur ACTIVE-User mit access_groups
+        # 5. Berechtigungen
         head("Berechtigungen")
         for u in USERS:
             if not u["access_groups"]:
@@ -289,61 +205,93 @@ def seed_access(token: str, dry_run: bool):
                 continue
             for ag_id in u["access_groups"]:
                 room = ROOMS[ag_id]
-                post_or_skip(c, f"{base}/permissions/", {
-                    "user_id":      u["id"],
-                    "room_id":      room["id"],
-                    "access_level": "read",
-                }, f"{u['id']} → {room['name']}", dry_run)
+                already = conn.execute(text(
+                    "SELECT 1 FROM permissions WHERE user_id=:u AND room_id=:r AND is_active=true"
+                ), {"u": u["id"], "r": room["id"]}).fetchone()
+                if already:
+                    skip(f"Bereits vorhanden: {u['id']} → {room['name']}")
+                    continue
+                if dry_run:
+                    skip(f"[dry-run] {u['id']} → {room['name']}")
+                    continue
+                conn.execute(text("""
+                    INSERT INTO permissions
+                        (user_id, room_id, access_level, is_active, created_at)
+                    VALUES (:uid, :rid, 'read', true, :t)
+                """), {"uid": u["id"], "rid": room["id"], "t": now})
+                ok(f"{u['id']} → {room['name']}")
+
 
 # ─── workmate-os seeden ───────────────────────────────────────────────────────
 
-def seed_os(token: str, dry_run: bool):
-    base = f"{OS_URL}/api"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+def seed_os(engine, dry_run: bool):
+    now = datetime.utcnow()
+    dept_name_to_id: dict[str, str] = {}
 
-    with httpx.Client(headers=headers, timeout=15) as c:
+    with engine.begin() as conn:
 
         # 1. Abteilungen
         head("Abteilungen (workmate-os)")
-        dept_name_to_id: dict[str, str] = {}
-
-        if not dry_run:
-            existing = c.get(f"{base}/departments").json()
-            # Response kann list oder dict sein
-            dept_list = existing if isinstance(existing, list) else existing.get("departments", [])
-            for d in dept_list:
-                dept_name_to_id[d["name"]] = d["id"]
-
-        for dept_name in DEPARTMENTS:
-            if dept_name in dept_name_to_id:
-                skip(f"Bereits vorhanden: {dept_name}")
+        for dept in DEPARTMENTS:
+            row = conn.execute(text("SELECT id FROM departments WHERE name = :n"), {"n": dept}).fetchone()
+            if row:
+                dept_name_to_id[dept] = str(row[0])
+                skip(f"Bereits vorhanden: {dept}")
                 continue
-            resp = api(c, "POST", f"{base}/departments", json={"name": dept_name}) if not dry_run else None
             if dry_run:
-                skip(f"[dry-run] Abteilung: {dept_name}")
-            elif resp.status_code == 201:
-                dept_name_to_id[dept_name] = resp.json()["id"]
-                ok(f"Abteilung: {dept_name}")
-            else:
-                err(f"Abteilung {dept_name}: {resp.status_code} {resp.text[:80]}")
+                skip(f"[dry-run] Abteilung: {dept}")
+                continue
+            r = conn.execute(text(
+                "INSERT INTO departments (id, name, created_at) VALUES (gen_random_uuid(), :n, :t) RETURNING id"
+            ), {"n": dept, "t": now})
+            dept_name_to_id[dept] = str(r.fetchone()[0])
+            ok(f"Abteilung: {dept}")
 
         # 2. Mitarbeiter
         head("Mitarbeiter (workmate-os)")
         for u in USERS:
-            dept_id = dept_name_to_id.get(u["department"])
-            kc_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"kit.{u['id']}"))
-            post_or_skip(c, f"{base}/employees", {
-                "employee_code":   u["id"],
-                "workmate_id":     u["workmate_id"],
-                "first_name":      u["first_name"],
-                "last_name":       u["last_name"],
-                "email":           u["email"],
-                "phone":           u["phone"],
-                "employment_type": EMPLOYMENT_TYPE_MAP.get(u["employment_type"], "fulltime"),
-                "department_id":   dept_id,
-                "hire_date":       u["hire_date"],
-                "status":          "active" if u["status"] == "ACTIVE" else "inactive",
-            }, f"Mitarbeiter: {u['display_name']} ({u['id']} / {u['workmate_id']})", dry_run)
+            row = conn.execute(text(
+                "SELECT id FROM employees WHERE employee_code = :c"
+            ), {"c": u["id"]}).fetchone()
+            if row:
+                # workmate_id nachtragen falls noch nicht gesetzt
+                conn.execute(text(
+                    "UPDATE employees SET workmate_id = :wid WHERE employee_code = :c AND workmate_id IS NULL"
+                ), {"wid": u["workmate_id"], "c": u["id"]})
+                skip(f"Bereits vorhanden: {u['display_name']} (workmate_id aktualisiert)")
+                continue
+            dept_id = dept_name_to_id.get(DEPT_OF_USER[u["id"]])
+            emp_type = EMPLOYMENT_TYPE_OS.get(EMPLOYMENT_MAP[u["id"]], "fulltime")
+            if dry_run:
+                skip(f"[dry-run] Mitarbeiter: {u['display_name']} ({u['id']} / {u['workmate_id']})")
+                continue
+            conn.execute(text("""
+                INSERT INTO employees
+                    (id, employee_code, workmate_id, uuid_keycloak,
+                     first_name, last_name, email, phone,
+                     employment_type, department_id, hire_date,
+                     status, created_at, updated_at)
+                VALUES
+                    (gen_random_uuid(), :code, :wid, :kc,
+                     :fn, :ln, :email, :phone,
+                     :etype, :dept, :hire,
+                     :status, :t, :t)
+            """), {
+                "code":   u["id"],
+                "wid":    u["workmate_id"],
+                "kc":     kc_uuid(u["id"]),
+                "fn":     u["display_name"].split()[0],
+                "ln":     " ".join(u["display_name"].split()[1:]),
+                "email":  u["email"],
+                "phone":  u["phone"],
+                "etype":  emp_type,
+                "dept":   dept_id,
+                "hire":   HIRE_DATE[u["id"]],
+                "status": "active" if u["status"] == "ACTIVE" else "inactive",
+                "t":      now,
+            })
+            ok(f"Mitarbeiter: {u['display_name']} ({u['id']} / {u['workmate_id']})")
+
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -359,38 +307,34 @@ def main():
     if args.dry_run:
         print(f"  {Y}DRY-RUN Modus — keine Änderungen werden geschrieben{RST}")
     print(f"{'='*55}")
-    print(f"  workmate-access : {ACCESS_URL}")
-    print(f"  workmate-os     : {OS_URL}")
+    print(f"  ACCESS_DB : {ACCESS_DB.split('@')[-1]}")
+    print(f"  OS_DB     : {OS_DB.split('@')[-1]}")
 
-    # Token holen
-    print()
-    token = fetch_access_token()
-    os_token = OS_TOKEN_ENV or token  # gleicher Token wenn selber Keycloak-Realm
-
-    # workmate-access
     if not args.skip_access:
         print(f"\n{'─'*55}")
         print(f"  workmate-access")
         print(f"{'─'*55}")
         try:
-            seed_access(token, args.dry_run)
+            engine = create_engine(ACCESS_DB)
+            seed_access(engine, args.dry_run)
         except Exception as e:
             err(f"workmate-access fehlgeschlagen: {e}")
+            raise
 
-    # workmate-os
     if not args.skip_os:
         print(f"\n{'─'*55}")
         print(f"  workmate-os")
         print(f"{'─'*55}")
         try:
-            seed_os(os_token, args.dry_run)
+            engine = create_engine(OS_DB)
+            seed_os(engine, args.dry_run)
         except Exception as e:
             err(f"workmate-os fehlgeschlagen: {e}")
 
     print(f"\n{'='*55}")
     print(f"  {G}Fertig!{RST}")
     if args.dry_run:
-        print(f"  Zum echten Import: --dry-run weglassen")
+        print(f"  Ohne --dry-run um wirklich zu schreiben.")
     print(f"{'='*55}\n")
 
 
