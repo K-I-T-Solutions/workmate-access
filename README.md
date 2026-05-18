@@ -1,6 +1,6 @@
 # workmate-access
 
-NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar, per Keycloak OIDC gesichert und unterstützt Dark Mode sowie Gravatar-Profilbilder.
+NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit vollständigem IAM-Dashboard. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar, per Keycloak OIDC gesichert und bietet direkte Keycloak-Benutzerverwaltung, Raum-Gruppen, Dark Mode und Gravatar-Profilbilder.
 
 **Live:** https://access.intern.phudevelopement.xyz
 
@@ -40,8 +40,11 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP
 │  ┌─────────────┐                │  │   API    │  │     API     │  │ │
 │  │  Admin-     │  HTTPS + OIDC  │  └──────────┘  └─────────────┘  │ │
 │  │  Dashboard  │ ◄────────────► │                                  │ │
-│  │  (Browser)  │                └──────────────────────────────────┘ │
-│  └─────────────┘                                                     │
+│  │  (Browser)  │                │  ┌──────────────────────────┐   │ │
+│  └─────────────┘                │  │  Keycloak Admin API      │   │ │
+│                                 │  │  (Service Account)       │   │ │
+│                                 │  └──────────────────────────┘   │ │
+│                                 └──────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,9 +57,10 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP
 | Migrationen | Alembic | Datenbankschema-Versionen |
 | OTP-Versand | sent.dm SDK | SMS und WhatsApp-Nachrichten |
 | YubiKey | YubiCloud API | Hardware-Token-Validierung |
-| Auth | Keycloak 26+ (OIDC, PKCE) | Admin-Dashboard-Authentifizierung |
+| Auth | Keycloak 26+ (OIDC, PKCE) | SSO, Admin-Dashboard-Authentifizierung |
+| Keycloak Admin | Keycloak Admin REST API | Benutzer/Sessions/Rollen direkt aus Dashboard verwalten |
 | Reverse Proxy | Caddy | HTTPS via Let's Encrypt (Cloudflare DNS-01) |
-| Dashboard-UI | Tailwind CSS, Vanilla JS | Dark Mode, Gravatar, Raum-Gruppen, Berechtigungs-Karten |
+| Dashboard-UI | Tailwind CSS, Vanilla JS | Landing Page, Dark Mode, Gravatar, Raum-Gruppen, SSO-Tab |
 
 ---
 
@@ -90,7 +94,7 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen. Ein ESP
 - Python 3.11+
 - PostgreSQL 15+
 - pip / virtualenv
-- Keycloak 26+ (Realm + Client konfiguriert, siehe [Keycloak-Setup](#keycloak-setup))
+- Keycloak 26+ (Realm + Clients konfiguriert, siehe [Keycloak-Setup](#keycloak-setup))
 
 **Firmware**
 - [PlatformIO CLI](https://platformio.org/install/cli) oder VS Code + PlatformIO Extension
@@ -185,11 +189,15 @@ DATABASE_URL=postgresql://workmate:workmate@localhost:5432/workmate_access
 PROJEKT_NAME=Workmate Access
 LOG_LEVEL=INFO
 
-# Keycloak (Admin-Auth)
+# Keycloak (Frontend-Auth, PKCE)
 KEYCLOAK_URL=https://login.example.com          # Public-URL (Issuer-Validierung + Frontend)
 KEYCLOAK_INTERNAL_URL=http://keycloak:8080      # Docker-interner Hostname für JWKS-Fetch
 KEYCLOAK_CLIENT_ID=workmate-access              # Public PKCE-Client
 KEYCLOAK_REALM=kit
+
+# Keycloak Admin Service Account (für SSO-Tab im Dashboard)
+KEYCLOAK_ADMIN_CLIENT_ID=workmate-admin
+KEYCLOAK_ADMIN_CLIENT_SECRET=<client-secret>   # Aus Keycloak Client → Credentials
 
 # CORS
 CORS_ORIGINS=["https://access.example.com","http://localhost:8000"]
@@ -220,7 +228,7 @@ YUBICO_SECRET_KEY=
 
 ## Keycloak-Setup
 
-### Realm & Clients
+### 1. Realm & PKCE-Client (Frontend-Auth)
 
 1. Realm `kit` anlegen (oder vorhandenen verwenden)
 2. Client `workmate-access` anlegen:
@@ -228,6 +236,38 @@ YUBICO_SECRET_KEY=
    - **Authentication flow:** Standard flow + PKCE (`S256`)
    - **Valid Redirect URIs:** `https://access.example.com/*`
    - **Web Origins:** `https://access.example.com` (kein Trailing-Slash!)
+
+### 2. Admin Service Account (SSO-Tab im Dashboard)
+
+Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admin API verwalten kann, wird ein dedizierter Service-Account-Client benötigt.
+
+**Client anlegen:**
+
+1. Keycloak Admin → Realm `kit` → **Clients** → **Create client**
+2. **Client type:** `OpenID Connect`
+3. **Client ID:** `workmate-admin`
+4. → **Next**
+5. **Client authentication:** `ON`
+6. **Authentication flow:** nur **Service accounts roles** aktivieren, alles andere aus
+7. → **Next** → **Save**
+
+**Client Secret kopieren:**
+
+- Tab **Credentials** → Secret kopieren
+- In `.env` eintragen: `KEYCLOAK_ADMIN_CLIENT_SECRET=<secret>`
+
+**Service Account Rollen zuweisen:**
+
+- Tab **Service account roles** → **Assign role**
+- Filter auf **Filter by clients** → Client `realm-management` wählen
+- Folgende Rollen zuweisen:
+
+| Rolle | Zweck |
+|---|---|
+| `view-users` | Benutzer auflisten und lesen |
+| `manage-users` | Benutzer anlegen, updaten, sperren, löschen |
+| `view-realm` | Realm-Rollen und Infos lesen |
+| `manage-realm` | Sessions verwalten |
 
 ### Bekannte Fallstricke
 
@@ -238,6 +278,7 @@ YUBICO_SECRET_KEY=
 | JWT `aud`-Claim fehlt bei Public Clients | `verify_aud: False` in der Token-Validierung |
 | Docker kann externe Keycloak-Domain nicht auflösen | `KEYCLOAK_INTERNAL_URL=http://keycloak:8080` für JWKS-Fetch setzen |
 | CORS-Fehler bei Login | Web Origins **ohne** Trailing-Slash eintragen |
+| Admin API gibt 403 | Service Account hat nicht alle `realm-management`-Rollen |
 
 ---
 
@@ -376,14 +417,6 @@ Prüft Zugang per NFC-Karten-UID und Geräte-ID.
 #### `POST /access/yubikey/verify`
 Validiert ein Yubico OTP gegen YubiCloud und prüft die Raumberechtigung.
 
-**Request:**
-```json
-{
-  "yubikey_otp": "ccccccxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "room_id": "serverroom"
-}
-```
-
 #### `GET /access/logs`
 Zugangsprotokoll abrufen. Query-Parameter: `user_id`, `room_id`, `limit`.
 
@@ -397,29 +430,17 @@ Protokoll als CSV-Datei herunterladen.
 #### `POST /access/otp/send`
 Sendet einen 6-stelligen OTP-Code per WhatsApp (bevorzugt) oder SMS.
 
-**Request:**
-```json
-{ "phone_number": "+4915712345678", "room_id": "serverroom" }
-```
-
 #### `POST /access/otp/verify`
 Verifiziert den OTP-Code und prüft die Raumberechtigung.
-
-**Request:**
-```json
-{ "phone_number": "+4915712345678", "code": "527511", "room_id": "serverroom" }
-```
 
 **OTP-Eigenschaften:**
 - 6 Stellen, kryptografisch zufällig
 - Gültig für 15 Minuten, einmalig verwendbar
-- Kanalwahl: WhatsApp wenn verfügbar, sonst SMS
 - Rate-Limit: max. 5 Sendungen pro Stunde pro Nummer
-- Vorherige offene Codes werden automatisch invalidiert
 
 ---
 
-### Benutzer
+### Benutzer (lokale DB)
 
 | Methode | Endpunkt | Beschreibung |
 |---|---|---|
@@ -442,7 +463,7 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 | `GET` | `/room-groups/` | Alle Gruppen auflisten |
 | `POST` | `/room-groups/` | Neue Gruppe anlegen |
 | `PATCH` | `/room-groups/{id}` | Gruppe umbenennen / Farbe ändern |
-| `DELETE` | `/room-groups/{id}` | Gruppe löschen (Räume werden nicht gelöscht) |
+| `DELETE` | `/room-groups/{id}` | Gruppe löschen |
 
 ### Räume
 
@@ -461,6 +482,27 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 | `GET` | `/permissions/` | Alle Berechtigungen auflisten |
 | `POST` | `/permissions/` | Berechtigung erstellen |
 | `DELETE` | `/permissions/{id}` | Berechtigung entfernen |
+
+### Keycloak Admin API (SSO-Management)
+
+Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
+
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/admin/kc/users` | Keycloak-Benutzer auflisten (Query: `search`) |
+| `POST` | `/admin/kc/users` | Benutzer in Keycloak anlegen |
+| `GET` | `/admin/kc/users/{kc_id}` | Einzelnen KC-Benutzer abrufen |
+| `PATCH` | `/admin/kc/users/{kc_id}` | KC-Benutzer aktualisieren |
+| `POST` | `/admin/kc/users/{kc_id}/disable` | Benutzer in Keycloak sperren |
+| `POST` | `/admin/kc/users/{kc_id}/enable` | Benutzer in Keycloak entsperren |
+| `POST` | `/admin/kc/users/{kc_id}/reset-password` | Passwort zurücksetzen |
+| `DELETE` | `/admin/kc/users/{kc_id}` | Benutzer aus Keycloak löschen |
+| `GET` | `/admin/kc/users/{kc_id}/sessions` | Aktive Sessions eines Benutzers |
+| `DELETE` | `/admin/kc/users/{kc_id}/sessions` | Alle Sessions eines Benutzers beenden |
+| `GET` | `/admin/kc/roles` | Alle Realm-Rollen auflisten |
+| `GET` | `/admin/kc/users/{kc_id}/roles` | Rollen eines Benutzers abrufen |
+| `POST` | `/admin/kc/users/{kc_id}/roles` | Rolle zuweisen |
+| `DELETE` | `/admin/kc/users/{kc_id}/roles/{role}` | Rolle entfernen |
 
 ---
 
@@ -492,7 +534,7 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 
 ### Zugangshierarchie
 
-- `role=admin` → Zugang zu allen Räumen ohne `access_permissions`-Eintrag
+- `role=admin` → Zugang zu allen Räumen ohne expliziten `access_permissions`-Eintrag
 - `role=user` → Zugang nur mit explizitem `access_permissions`-Eintrag
 
 ---
@@ -525,21 +567,22 @@ workmate-access/
 │       │   ├── user_chip.py
 │       │   ├── user_yubikey.py
 │       │   └── otp_code.py
-│       ├── schemas/
-│       │   ├── user.py
-│       │   ├── room.py
-│       │   └── access.py
 │       ├── api/routes/
 │       │   ├── users.py
 │       │   ├── rooms.py
 │       │   ├── room_groups.py
 │       │   ├── permissions.py
-│       │   └── access.py
+│       │   ├── access.py
+│       │   ├── nfc_chips.py
+│       │   ├── yubikeys.py
+│       │   └── keycloak_admin.py  ← Keycloak Admin API Proxy (SSO-Tab)
 │       ├── services/
 │       │   ├── access_service.py
-│       │   └── otp_service.py
+│       │   ├── otp_service.py
+│       │   ├── yubikey_service.py
+│       │   └── keycloak_admin.py  ← Admin API Client (client_credentials)
 │       ├── static/
-│       │   ├── index.html      ← Admin-Dashboard (Tailwind, Keycloak PKCE)
+│       │   ├── index.html      ← Admin-Dashboard + Landing Page (Tailwind, PKCE)
 │       │   └── keycloak.js     ← keycloak-js@26.2.4 (gebündelt)
 │       └── migrations/
 │           └── versions/       ← Alembic-Migrationen
