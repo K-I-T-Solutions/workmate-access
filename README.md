@@ -1,6 +1,6 @@
 # workmate-access
 
-NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit vollständigem IAM-Dashboard. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar, per Keycloak OIDC gesichert und bietet direkte Keycloak-Benutzerverwaltung, Raum-Gruppen, Dark Mode und Gravatar-Profilbilder.
+NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit vollständigem IAM-Dashboard. Ein ESP32-Mikrocontroller liest NFC-Chips und Karten und kommuniziert mit einem FastAPI-Backend, das Berechtigungen prüft, OTP-Codes per SMS oder WhatsApp versendet, YubiKey-OTP validiert, Zigbee-Schlösser steuert und ein vollständiges Audit-Log führt. Das Admin-Dashboard ist per Browser erreichbar, per Keycloak OIDC gesichert und bietet direkte Keycloak-Benutzerverwaltung, Raum-Gruppen, Echtzeit-Benachrichtigungen, Anwesenheits-Tracking, Dark Mode und Gravatar-Profilbilder.
 
 **Live:** https://access.intern.phudevelopement.xyz
 
@@ -13,6 +13,7 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit voll
 - [Firmware-Setup](#firmware-setup)
 - [Umgebungsvariablen](#umgebungsvariablen)
 - [Keycloak-Setup](#keycloak-setup)
+- [Zigbee-Setup](#zigbee-setup)
 - [Datenbankschema](#datenbankschema)
 - [API-Referenz](#api-referenz)
 - [Zugangslogik](#zugangslogik)
@@ -40,9 +41,14 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit voll
 │  ┌─────────────┐                │  │   API    │  │     API     │  │ │
 │  │  Admin-     │  HTTPS + OIDC  │  └──────────┘  └─────────────┘  │ │
 │  │  Dashboard  │ ◄────────────► │                                  │ │
-│  │  (Browser)  │                │  ┌──────────────────────────┐   │ │
+│  │  (Browser)  │   SSE-Stream   │  ┌──────────────────────────┐   │ │
 │  └─────────────┘                │  │  Keycloak Admin API      │   │ │
 │                                 │  │  (Service Account)       │   │ │
+│  ┌─────────────┐                │  └──────────────────────────┘   │ │
+│  │ Zigbee2MQTT │   MQTT (1883)  │                                  │ │
+│  │  + Schloss  │ ◄────────────► │  ┌──────────────────────────┐   │ │
+│  └─────────────┘                │  │  Event Bus (asyncio)     │   │ │
+│                                 │  │  SSE Pub/Sub             │   │ │
 │                                 │  └──────────────────────────┘   │ │
 │                                 └──────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────┘
@@ -53,14 +59,17 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit voll
 | ESP32 | C++, PlatformIO, Arduino-Framework | NFC-Lesung, WiFi, eingebetteter Webserver |
 | PN532 | I2C, Adafruit PN532-Lib | NFC-Chips und -Karten lesen |
 | Backend | FastAPI, SQLAlchemy, Pydantic v2 | REST-API, Zugangsprüfung, OTP, YubiKey |
-| Datenbank | PostgreSQL 15+ | Users, Rooms, Room Groups, Chips, YubiKeys, Logs, OTPs |
+| Datenbank | PostgreSQL 15+ | Users, Rooms, Room Groups, Chips, YubiKeys, Logs, OTPs, Presence |
 | Migrationen | Alembic | Datenbankschema-Versionen |
 | OTP-Versand | sent.dm SDK | SMS und WhatsApp-Nachrichten |
 | YubiKey | YubiCloud API | Hardware-Token-Validierung |
 | Auth | Keycloak 26+ (OIDC, PKCE) | SSO, Admin-Dashboard-Authentifizierung |
 | Keycloak Admin | Keycloak Admin REST API | Benutzer/Sessions/Rollen direkt aus Dashboard verwalten |
+| Zigbee-Lock | paho-mqtt → Zigbee2MQTT | Türöffner-Steuerung per MQTT, automatisches Wiederverriegeln |
+| Echtzeit-Alerts | Server-Sent Events (sse-starlette) | Verweigerungs-Benachrichtigungen live im Dashboard |
+| Rate-Limiting | slowapi (120 req/min per IP) | Schutz aller API-Endpunkte vor Missbrauch |
 | Reverse Proxy | Caddy | HTTPS via Let's Encrypt (Cloudflare DNS-01) |
-| Dashboard-UI | Tailwind CSS, Vanilla JS | Statistik-Dashboard, Landing Page, Dark Mode, Gravatar, Raum-Gruppen, SSO-Tab |
+| Dashboard-UI | Tailwind CSS, Vanilla JS | Statistik-Dashboard, Landing Page, Dark Mode, Gravatar, Raum-Gruppen, SSO-Tab, Anwesenheit |
 
 ---
 
@@ -306,6 +315,18 @@ OTP_VERIFY_WINDOW_MINUTES=15
 # API-Key beantragen: https://upgrade.yubico.com/getapikey/
 YUBICO_CLIENT_ID=
 YUBICO_SECRET_KEY=
+
+# Zigbee2MQTT (optional — für Schloss-Steuerung per MQTT)
+ZIGBEE2MQTT_HOST=192.168.178.50   # MQTT-Broker-IP (leer = Zigbee deaktiviert)
+ZIGBEE2MQTT_PORT=1883
+ZIGBEE2MQTT_USER=                 # optional, falls MQTT Auth aktiviert
+ZIGBEE2MQTT_PASSWORD=
+ZIGBEE_UNLOCK_PAYLOAD={"state":"UNLOCK"}
+ZIGBEE_LOCK_PAYLOAD={"state":"LOCK"}
+ZIGBEE_RELOCK_DELAY=5             # Sekunden bis automatisches Wiederverriegeln
+
+# Keycloak Webhook (optional)
+WEBHOOK_SECRET=                   # Wenn gesetzt: Header X-Webhook-Secret wird geprüft
 ```
 
 ---
@@ -363,6 +384,35 @@ Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admi
 | Docker kann externe Keycloak-Domain nicht auflösen | `KEYCLOAK_INTERNAL_URL=http://keycloak:8080` für JWKS-Fetch setzen |
 | CORS-Fehler bei Login | Web Origins **ohne** Trailing-Slash eintragen |
 | Admin API gibt 403 | Service Account hat nicht alle `realm-management`-Rollen |
+
+---
+
+## Zigbee-Setup
+
+Das Backend kann Türschlösser direkt über [Zigbee2MQTT](https://www.zigbee2mqtt.io/) steuern. Bei einem gewährten NFC-Zugang wird das Schloss des Raums automatisch geöffnet und nach `ZIGBEE_RELOCK_DELAY` Sekunden wieder verriegelt.
+
+### Voraussetzungen
+
+- Zigbee2MQTT läuft im Netzwerk und ist mit dem Schloss gepaired
+- Ein MQTT-Broker ist erreichbar (z. B. Mosquitto)
+- Die Geräte-ID des Schlosses ist in Zigbee2MQTT bekannt (z. B. `tuya_lock_01`)
+
+### Raum mit Schloss verknüpfen
+
+Beim Anlegen oder Bearbeiten eines Raums das Feld `zigbee_lock_id` mit der Zigbee2MQTT-Geräte-ID befüllen:
+
+```json
+{ "id": "serverroom", "name": "Serverraum", "zigbee_lock_id": "tuya_lock_01" }
+```
+
+Das Backend publiziert dann bei Zugang auf das Topic `zigbee2mqtt/tuya_lock_01/set`:
+
+```
+→ {"state":"UNLOCK"}
+→ (nach ZIGBEE_RELOCK_DELAY Sekunden) {"state":"LOCK"}
+```
+
+Ist `ZIGBEE2MQTT_HOST` leer oder ist `zigbee_lock_id` für den Raum nicht gesetzt, wird kein MQTT-Befehl gesendet.
 
 ---
 
@@ -466,6 +516,18 @@ Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admi
 | is_used | BOOLEAN | Token eingelöst |
 | used_at | TIMESTAMP (nullable) | Einlösezeitpunkt |
 | created_at | TIMESTAMP | Erstellungszeitpunkt |
+
+### presence
+
+Anwesenheits-Tracking per Toggle-Logik: erster NFC-Scan = Betreten, zweiter = Verlassen.
+
+| Spalte | Typ | Beschreibung |
+|---|---|---|
+| id | INTEGER (PK) | Auto-Increment |
+| user_id | VARCHAR (FK→users) | Benutzer |
+| room_id | VARCHAR (FK→rooms) | Raum |
+| entered_at | TIMESTAMP | Zeitpunkt des Betretens |
+| left_at | TIMESTAMP (nullable) | Zeitpunkt des Verlassens (null = noch anwesend) |
 
 ### otp_codes
 
@@ -617,6 +679,9 @@ Verifiziert den OTP-Code und prüft die Raumberechtigung.
 | `POST` | `/permissions/` | Berechtigung erstellen |
 | `PATCH` | `/permissions/{id}` | Zeiteinschränkungen nachträglich ändern |
 | `DELETE` | `/permissions/{id}` | Berechtigung entfernen |
+| `GET` | `/permissions/export` | Alle Berechtigungen als CSV herunterladen |
+
+**CSV-Export** liefert eine Datei `berechtigungen.csv` mit Benutzer-ID, Anzeigename, Raum, Level und allen Zeitfeldern. Der Download-Button ist im Berechtigungs-Tab des Dashboards integriert.
 
 **Zeitbasierte Felder (alle optional):**
 
@@ -666,6 +731,78 @@ Zeitlich begrenzte Einmal-Links ohne Keycloak-Account. Wird im Audit-Log protoko
 
 ---
 
+### Anwesenheit (Presence)
+
+Erfordert gültigen Keycloak-Bearer-Token.
+
+| Methode | Endpunkt | Beschreibung |
+|---|---|---|
+| `GET` | `/presence/current` | Alle aktuell anwesenden Benutzer (kein `left_at`) |
+| `GET` | `/presence/history` | Letzte Anwesenheits-Einträge (Query: `limit`, default 50) |
+
+**Response `/presence/current`:**
+```json
+[
+  {
+    "user_id": "KIT-0001",
+    "room_id": "serverroom",
+    "entered_at": "2026-05-18T08:45:00",
+    "left_at": null,
+    "display_name": "Joshua Phu",
+    "room_name": "Serverraum"
+  }
+]
+```
+
+Das Dashboard zeigt die aktuelle Anwesenheit als grüne Badges auf dem Statistik-Tab.
+
+---
+
+### Echtzeit-Events (SSE)
+
+#### `GET /events/access`
+
+Server-Sent Events Stream. Liefert Echtzeit-Benachrichtigungen bei abgelehnten Zugängen.
+
+**Auth:** Bearer-Token als Query-Parameter (`?token=...`), da `EventSource` keine Custom-Header unterstützt.
+
+**Event-Format:**
+```json
+{
+  "type": "access_denied",
+  "user_id": "KIT-0002",
+  "room_id": "serverroom",
+  "reason": "Zugang nur erlaubt an: Mo, Di, Mi, Do, Fr",
+  "timestamp": "2026-05-18T22:13:00"
+}
+```
+
+Das Dashboard zeigt einen Toast oben rechts, wenn ein Zugang verweigert wird.
+
+---
+
+### Keycloak Webhook
+
+#### `POST /webhooks/keycloak`
+
+Empfängt Events vom Keycloak Event-Listener und schreibt sie ins Audit-Log.
+
+**Optionaler Schutz:** Header `X-Webhook-Secret` wird gegen `WEBHOOK_SECRET` in `.env` geprüft.
+
+**Unterstützte Event-Typen:**
+
+| Keycloak-Event | Eintrag im Audit-Log |
+|---|---|
+| `LOGIN` | `granted=true`, Reason: `SSO Login` |
+| `LOGIN_ERROR` | `granted=false`, Reason: `SSO Login fehlgeschlagen (<IP>)` |
+| `LOGOUT` | `granted=false`, Reason: `SSO Logout` |
+
+Alle Einträge erhalten `room_id="__sso__"` zur Unterscheidung von Raum-Zugängen.
+
+**Keycloak konfigurieren:** Admin → Events → Event Listener → HTTP-Plugin auf `POST /webhooks/keycloak`.
+
+---
+
 ### Keycloak Admin API (SSO-Management)
 
 Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
@@ -696,9 +833,15 @@ Alle Endpunkte erfordern `role=admin` im Keycloak-Token.
 1. ESP32 liest NFC-Chip-UID oder Karten-UID
 2. `POST /access/verify-card` mit `card_uid` + `device_id` + `room_id`
 3. Backend sucht `user_chips` nach UID → findet Benutzer
-4. Prüft `access_permissions` für (user, room)
-5. Schreibt Eintrag in `access_logs`
-6. Gibt `access: true/false` zurück
+4. Prüft `access_permissions` für (user, room) inkl. Zeitfelder
+5. **Bei Zugang gewährt:**
+   - Öffnet Zigbee-Schloss des Raums (falls `zigbee_lock_id` gesetzt)
+   - Verriegelt automatisch nach `ZIGBEE_RELOCK_DELAY` Sekunden
+   - Aktualisiert Anwesenheits-Eintrag (Toggle: Betreten ↔ Verlassen)
+6. **Bei Zugang verweigert:**
+   - Publiziert Denial-Event in den SSE Event-Bus → Dashboard-Toast
+7. Schreibt Eintrag in `access_logs`
+8. Gibt `access: true/false` zurück
 
 ### YubiKey-Zugang
 
@@ -759,39 +902,44 @@ workmate-access/
 │   ├── Makefile
 │   ├── requirements.txt
 │   └── app/
-│       ├── main.py             ← FastAPI-App, Middleware, Router
+│       ├── main.py             ← FastAPI-App, slowapi Rate-Limiting, alle Router
 │       ├── core/
 │       │   ├── auth.py         ← Keycloak JWT-Validierung, JWKS-Cache
-│       │   ├── config.py       ← Settings (pydantic_settings)
+│       │   ├── config.py       ← Settings inkl. Zigbee + Webhook
 │       │   └── database.py     ← SQLAlchemy Engine & Session
 │       ├── models/
 │       │   ├── user.py
 │       │   ├── room_group.py
 │       │   ├── room.py
 │       │   ├── access_log.py
-│       │   ├── access_permission.py
+│       │   ├── access_permission.py ← inkl. zeitbasierte Felder
 │       │   ├── user_chip.py
 │       │   ├── user_yubikey.py
-│       │   └── otp_code.py
+│       │   ├── otp_code.py
+│       │   ├── guest_token.py  ← UUID-Einmal-Links
+│       │   └── presence.py     ← Anwesenheits-Tracking
 │       ├── api/routes/
 │       │   ├── users.py
 │       │   ├── rooms.py
 │       │   ├── room_groups.py
-│       │   ├── permissions.py
-│       │   ├── access.py
+│       │   ├── permissions.py  ← inkl. PATCH + CSV-Export
+│       │   ├── access.py       ← inkl. Stats-Endpunkt
 │       │   ├── nfc_chips.py
 │       │   ├── yubikeys.py
-│       │   ├── guest.py           ← Gast-Token Generierung + Einlösung
-│       │   └── keycloak_admin.py  ← Keycloak Admin API Proxy (SSO-Tab)
+│       │   ├── guest.py        ← Gast-Token Generierung + Einlösung
+│       │   ├── keycloak_admin.py ← Keycloak Admin API Proxy
+│       │   ├── events.py       ← SSE-Stream für Echtzeit-Alerts
+│       │   ├── webhooks.py     ← Keycloak Event-Listener Webhook
+│       │   └── presence.py     ← Anwesenheits-Endpunkte
 │       ├── services/
-│       │   ├── access_service.py
+│       │   ├── access_service.py  ← Zeitprüfung, Zigbee-Unlock, Presence-Toggle
 │       │   ├── otp_service.py
 │       │   ├── yubikey_service.py
-│       │   └── keycloak_admin.py  ← Admin API Client (client_credentials)
-│       ├── models/
-│       │   └── guest_token.py     ← Gast-Token Modell
+│       │   ├── keycloak_admin.py  ← Admin API Client (client_credentials)
+│       │   ├── zigbee_service.py  ← MQTT-Steuerung via paho-mqtt
+│       │   └── event_bus.py       ← asyncio.Queue-basierter SSE Pub/Sub
 │       ├── static/
-│       │   ├── index.html      ← Admin-Dashboard + Landing Page (Tailwind, PKCE)
+│       │   ├── index.html      ← Dashboard + Landing Page (Tailwind, PKCE, SSE)
 │       │   └── keycloak.js     ← keycloak-js@26.2.4 (gebündelt)
 │       └── migrations/
 │           └── versions/       ← Alembic-Migrationen
