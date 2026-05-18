@@ -111,6 +111,8 @@
         /* Zeitbadge auf Permission-Pills */
         .time-badge { display:inline-flex; align-items:center; gap:0.2rem; background:rgba(99,102,241,0.1); color:#6366f1; border-radius:0.25rem; padding:0.1rem 0.35rem; font-size:0.65rem; font-weight:600; margin-left:0.25rem; }
         /* ===== DARK MODE ===== */
+        body.dark #stat-recent-logs .text-slate-800 { color:#f1f5f9 !important; }
+        body.dark #stat-recent-logs .text-slate-400 { color:#64748b !important; }
         body.dark .room-group-header { background:#1e293b; border-color:#334155; }
         body.dark .perm-card { background:#1e293b !important; border-color:#334155 !important; }
         body.dark { background: #0f172a; color: #e2e8f0; }
@@ -370,7 +372,11 @@
         </div>
 
         <nav class="flex-1 px-3 py-4 space-y-1">
-            <div class="sidebar-link active" id="nav-users" onclick="switchTab('users', this)">
+            <div class="sidebar-link active" id="nav-dashboard" onclick="switchTab('dashboard', this)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </div>
+            <div class="sidebar-link" id="nav-users" onclick="switchTab('users', this)">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 Benutzer
             </div>
@@ -420,8 +426,106 @@
     <!-- Main Content -->
     <div class="flex-1 overflow-y-auto">
 
+        <!-- DASHBOARD -->
+        <section id="tab-dashboard" class="tab-content p-6">
+            <div class="mb-6">
+                <h1 class="text-xl font-bold text-slate-900">Dashboard</h1>
+                <p class="text-slate-500 text-sm mt-0.5">Übersicht über das gesamte Zugangssystem</p>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-2 gap-4 mb-6" style="grid-template-columns: repeat(4, 1fr)">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Benutzer</span>
+                        <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                    </div>
+                    <div id="stat-users" class="text-3xl font-bold text-slate-900">—</div>
+                    <div class="text-xs text-slate-400 mt-1">aktiv registriert</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Räume</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                    </div>
+                    <div id="stat-rooms" class="text-3xl font-bold text-slate-900">—</div>
+                    <div class="text-xs text-slate-400 mt-1">aktive Räume</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Heute gewährt</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                    <div id="stat-granted" class="text-3xl font-bold text-emerald-600">—</div>
+                    <div id="stat-access-sub" class="text-xs text-slate-400 mt-1">von — Versuchen</div>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Heute verweigert</span>
+                        <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                    </div>
+                    <div id="stat-denied" class="text-3xl font-bold text-red-500">—</div>
+                    <div class="text-xs text-slate-400 mt-1">abgelehnte Versuche</div>
+                </div>
+            </div>
+
+            <!-- Zusatz-Stats + Aktivitätsfeed -->
+            <div class="grid gap-4" style="grid-template-columns: 1fr 2fr">
+                <!-- Mini-Stats -->
+                <div class="space-y-3">
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+                        <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        </div>
+                        <div>
+                            <div id="stat-perms" class="text-xl font-bold text-slate-900">—</div>
+                            <div class="text-xs text-slate-400">Berechtigungen</div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+                        <div class="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+                        </div>
+                        <div>
+                            <div id="stat-chips" class="text-xl font-bold text-slate-900">—</div>
+                            <div class="text-xs text-slate-400">NFC Chips</div>
+                        </div>
+                    </div>
+                    <!-- Grant-Rate Bar -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500">Erfolgsrate heute</span>
+                            <span id="stat-rate" class="text-xs font-bold text-slate-700">—</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="stat-rate-bar" class="h-2 rounded-full bg-emerald-500 transition-all" style="width:0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Letzte Ereignisse -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                        <span class="text-sm font-semibold text-slate-800">Letzte Ereignisse</span>
+                        <button onclick="switchTab('logs', document.getElementById('nav-logs'))" class="text-xs text-indigo-600 hover:underline">Alle anzeigen</button>
+                    </div>
+                    <div id="stat-recent-logs" class="divide-y divide-slate-50">
+                        <div class="px-4 py-3 text-sm text-slate-400">Wird geladen…</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- BENUTZER -->
-        <section id="tab-users" class="tab-content p-6">
+        <section id="tab-users" class="tab-content p-6" style="display:none">
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">Benutzer</h1>
@@ -1056,7 +1160,7 @@ async function initAuth() {
         }
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('app').style.display = '';
-        loadUsers();
+        loadDashboard();
     } catch (e) {
         loadingMsg.textContent = 'Fehler: ' + e.message;
     }
@@ -1112,12 +1216,60 @@ function switchTab(tab, el) {
     (el?.closest?.('.sidebar-link') || document.getElementById('nav-' + tab))?.classList.add('active');
     closeSidebar();
 
-    if (tab === 'users') loadUsers();
+    if (tab === 'dashboard') loadDashboard();
+    else if (tab === 'users') loadUsers();
     else if (tab === 'rooms') loadRooms();
     else if (tab === 'permissions') loadPermissions();
     else if (tab === 'logs') { loadLogs(); startLogRefresh(); }
     else if (tab === 'sso') loadKcUsers();
     if (tab !== 'logs') stopLogRefresh();
+}
+
+// ==================== DASHBOARD ====================
+async function loadDashboard() {
+    try {
+        const s = await api('/access/stats');
+        if (!s) return;
+
+        document.getElementById('stat-users').textContent   = s.total_users;
+        document.getElementById('stat-rooms').textContent   = s.total_rooms;
+        document.getElementById('stat-perms').textContent   = s.total_perms;
+        document.getElementById('stat-chips').textContent   = s.total_chips;
+        document.getElementById('stat-granted').textContent = s.granted_today;
+        document.getElementById('stat-denied').textContent  = s.denied_today;
+        document.getElementById('stat-access-sub').textContent = `von ${s.access_today} Versuchen heute`;
+
+        const rate = s.access_today > 0 ? Math.round(s.granted_today / s.access_today * 100) : 0;
+        document.getElementById('stat-rate').textContent = s.access_today > 0 ? `${rate}%` : '—';
+        document.getElementById('stat-rate-bar').style.width = rate + '%';
+        document.getElementById('stat-rate-bar').className =
+            'h-2 rounded-full transition-all ' + (rate >= 80 ? 'bg-emerald-500' : rate >= 50 ? 'bg-amber-400' : 'bg-red-400');
+
+        const logEl = document.getElementById('stat-recent-logs');
+        if (!s.recent_logs.length) {
+            logEl.innerHTML = '<div class="px-4 py-3 text-sm text-slate-400">Noch keine Ereignisse.</div>';
+            return;
+        }
+        logEl.innerHTML = s.recent_logs.map(l => {
+            const granted = l.granted;
+            const dot = granted
+                ? '<span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0 mt-1.5"></span>'
+                : '<span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0 mt-1.5"></span>';
+            const time = new Date(l.timestamp).toLocaleString('de-DE', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+            return `<div class="flex items-start gap-3 px-4 py-2.5">
+                ${dot}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-medium text-slate-800 truncate">${esc(l.user_id || 'Unbekannt')}</span>
+                        <span class="text-xs text-slate-400 flex-shrink-0">${time}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 truncate">
+                        ${esc(l.room_id)}${l.reason ? ' · ' + esc(l.reason) : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { showError(e.message); }
 }
 
 // ==================== BENUTZER ====================

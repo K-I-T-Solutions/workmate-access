@@ -19,7 +19,9 @@ from ...schemas.access import (
 from ...services.access_service import AccessService
 from ...services.otp_service import OtpService
 from ...services.yubikey_service import verify_yubikey_access
-from ...models import AccessLog
+from ...models import AccessLog, User, Room, Permission, NfcChip
+from datetime import date
+from sqlalchemy import func
 from pydantic import BaseModel
 from typing import Optional
 
@@ -198,3 +200,46 @@ def verify_otp(request: OtpVerifyRequest, db: Session = Depends(get_db)):
 ```
     """
     return OtpService.verify_otp(db, request)
+
+
+@router.get("/stats")
+def get_stats(db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
+    today = date.today()
+
+    total_users  = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+    total_rooms  = db.query(func.count(Room.id)).filter(Room.is_active == True).scalar()
+    total_perms  = db.query(func.count(Permission.id)).filter(Permission.is_active == True).scalar()
+    total_chips  = db.query(func.count(NfcChip.id)).filter(NfcChip.is_active == True).scalar()
+
+    access_today   = db.query(func.count(AccessLog.id)).filter(func.date(AccessLog.timestamp) == today).scalar()
+    granted_today  = db.query(func.count(AccessLog.id)).filter(func.date(AccessLog.timestamp) == today, AccessLog.granted == True).scalar()
+    denied_today   = access_today - granted_today
+
+    recent_logs = (
+        db.query(AccessLog)
+        .order_by(AccessLog.timestamp.desc())
+        .limit(8)
+        .all()
+    )
+
+    return {
+        "total_users":   total_users,
+        "total_rooms":   total_rooms,
+        "total_perms":   total_perms,
+        "total_chips":   total_chips,
+        "access_today":  access_today,
+        "granted_today": granted_today,
+        "denied_today":  denied_today,
+        "recent_logs": [
+            {
+                "id":        l.id,
+                "user_id":   l.user_id,
+                "room_id":   l.room_id,
+                "granted":   l.granted,
+                "reason":    l.reason,
+                "device_id": l.device_id,
+                "timestamp": l.timestamp.isoformat(),
+            }
+            for l in recent_logs
+        ],
+    }
