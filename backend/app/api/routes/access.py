@@ -83,36 +83,54 @@ def verify_card(
 
 @router.get("/logs", response_model=list[AccessLogResponse])
 def get_access_logs(
-    user_id: str = None,
-    room_id: str = None,
+    user_id: Optional[str] = None,
+    room_id: Optional[str] = None,
+    granted: Optional[bool] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     limit: int = 100,
     db: Session = Depends(get_db),
     _: TokenData = Depends(require_admin),
 ):
-    """Hole Access Logs (optional gefiltert)"""
+    """Hole Access Logs (optional gefiltert nach User, Raum, Status, Datumsbereich)"""
+    from datetime import datetime, time as dtime
     query = db.query(AccessLog)
-    
     if user_id:
         query = query.filter(AccessLog.user_id == user_id)
     if room_id:
         query = query.filter(AccessLog.room_id == room_id)
-    
+    if granted is not None:
+        query = query.filter(AccessLog.granted == granted)
+    if date_from:
+        query = query.filter(AccessLog.timestamp >= datetime.combine(date_from, dtime.min))
+    if date_to:
+        query = query.filter(AccessLog.timestamp <= datetime.combine(date_to, dtime.max))
     return query.order_by(AccessLog.timestamp.desc()).limit(limit).all()
 
 @router.get("/logs/export")
 def export_logs_csv(
-    user_id: str = None,
-    room_id: str = None,
+    user_id: Optional[str] = None,
+    room_id: Optional[str] = None,
+    granted: Optional[bool] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     limit: int = 10000,
     db: Session = Depends(get_db),
     _: TokenData = Depends(require_admin),
 ):
     """Zugangsprotokoll als CSV exportieren"""
+    from datetime import datetime, time as dtime
     query = db.query(AccessLog)
     if user_id:
         query = query.filter(AccessLog.user_id == user_id)
     if room_id:
         query = query.filter(AccessLog.room_id == room_id)
+    if granted is not None:
+        query = query.filter(AccessLog.granted == granted)
+    if date_from:
+        query = query.filter(AccessLog.timestamp >= datetime.combine(date_from, dtime.min))
+    if date_to:
+        query = query.filter(AccessLog.timestamp <= datetime.combine(date_to, dtime.max))
     logs = query.order_by(AccessLog.timestamp.desc()).limit(limit).all()
 
     output = io.StringIO()

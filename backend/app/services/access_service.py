@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from ..models import User, Room, Permission, AccessLog, NfcChip, Presence
 from . import zigbee_service
 from .event_bus import publish as bus_publish
+from . import notification_service
 from ..core.config import settings
 from ..schemas.access import (
     AccessVerifyRequest,
@@ -195,6 +196,13 @@ class AccessService:
                 "reason":    reason,
                 "timestamp": timestamp.isoformat(),
             })
+            notification_service.notify_denial(
+                user_id=user.id,
+                user_name=user.display_name,
+                room_id=request.room_id,
+                reason=reason,
+                timestamp=timestamp.strftime("%d.%m.%Y %H:%M:%S"),
+            )
 
         return CardVerifyResponse(
             access=has_access,

@@ -64,6 +64,10 @@ class Settings(BaseSettings):
     YUBICO_CLIENT_ID: str = ""
     YUBICO_SECRET_KEY: str = ""  # Base64-kodierter HMAC-Schlüssel von https://upgrade.yubico.com/getapikey/
 
+    # Telegram-Benachrichtigungen (optional)
+    TELEGRAM_BOT_TOKEN: str = ""   # @BotFather → /newbot
+    TELEGRAM_CHAT_ID: str = ""     # Chat-ID des Admins oder einer Gruppe
+
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
