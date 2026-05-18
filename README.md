@@ -60,7 +60,7 @@ NFC- und OTP-basiertes Zugangskontrollsystem für Räume und Ressourcen mit voll
 | Auth | Keycloak 26+ (OIDC, PKCE) | SSO, Admin-Dashboard-Authentifizierung |
 | Keycloak Admin | Keycloak Admin REST API | Benutzer/Sessions/Rollen direkt aus Dashboard verwalten |
 | Reverse Proxy | Caddy | HTTPS via Let's Encrypt (Cloudflare DNS-01) |
-| Dashboard-UI | Tailwind CSS, Vanilla JS | Landing Page, Dark Mode, Gravatar, Raum-Gruppen, SSO-Tab |
+| Dashboard-UI | Tailwind CSS, Vanilla JS | Statistik-Dashboard, Landing Page, Dark Mode, Gravatar, Raum-Gruppen, SSO-Tab |
 
 ---
 
@@ -475,6 +475,37 @@ Damit das Dashboard Benutzer, Sessions und Rollen direkt über die Keycloak Admi
 Base-URL: `/api/v1`
 
 Alle Admin-Endpunkte erfordern einen gültigen Keycloak-Bearer-Token (`Authorization: Bearer <token>`).
+
+### Dashboard / Statistiken
+
+#### `GET /access/stats`
+Gibt eine Übersicht über das gesamte System zurück. Wird vom Dashboard beim Login geladen.
+
+**Response:**
+```json
+{
+  "total_users":   12,
+  "total_rooms":   5,
+  "total_perms":   28,
+  "total_chips":   9,
+  "access_today":  34,
+  "granted_today": 31,
+  "denied_today":  3,
+  "recent_logs": [
+    {
+      "id": 142,
+      "user_id": "KIT-0001",
+      "room_id": "serverroom",
+      "granted": true,
+      "reason": "Berechtigung: read",
+      "device_id": "esp32_entrance_01",
+      "timestamp": "2026-05-18T09:14:00"
+    }
+  ]
+}
+```
+
+---
 
 ### Zugangsprüfung
 
