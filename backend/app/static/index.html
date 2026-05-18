@@ -812,11 +812,11 @@
         <form id="user-form" onsubmit="saveUser(event)" class="space-y-3">
             <input type="hidden" id="user-edit-id">
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. KIT-0001)</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. KIT-0001) <span id="user-id-hint" class="text-amber-500 hidden">— Änderung via "ID umbenennen"</span></label>
                 <input type="text" id="user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">Keycloak-ID</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Keycloak-ID (UUID)</label>
                 <input type="text" id="user-keycloak-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
@@ -838,11 +838,42 @@
                     <option value="admin">Admin</option>
                 </select>
             </div>
-            <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('user-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            <div class="flex justify-between gap-2 pt-2">
+                <button type="button" id="rename-id-btn" onclick="openRenameIdDialog()" style="display:none;" class="px-3 py-2 border border-amber-300 hover:bg-amber-50 text-amber-700 rounded-lg text-sm font-medium transition-colors">
+                    ID umbenennen
+                </button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" onclick="document.getElementById('user-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+                </div>
             </div>
         </form>
+    </div>
+</dialog>
+
+<dialog id="rename-id-dialog">
+    <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Benutzer-ID umbenennen</h3>
+            <button onclick="document.getElementById('rename-id-dialog').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+            ⚠️ Alle Zugangslogs, NFC-Chips, Berechtigungen und Anwesenheits­einträge werden auf die neue ID migriert.
+        </div>
+        <div class="mb-4">
+            <label class="block text-xs font-medium text-slate-500 mb-1">Aktuelle ID</label>
+            <div id="rename-current-id" class="font-mono text-sm bg-slate-100 px-3 py-2 rounded-lg text-slate-600"></div>
+        </div>
+        <div class="mb-5">
+            <label class="block text-xs font-medium text-slate-500 mb-1">Neue ID</label>
+            <input type="text" id="rename-new-id" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+        <div class="flex justify-end gap-2">
+            <button onclick="document.getElementById('rename-id-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+            <button onclick="confirmRenameId()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">ID umbenennen</button>
+        </div>
     </div>
 </dialog>
 
@@ -1487,6 +1518,8 @@ function openUserDialog() {
     document.getElementById('user-form').reset();
     document.getElementById('user-edit-id').value = '';
     document.getElementById('user-dialog-title').textContent = 'Neuer Benutzer';
+    document.getElementById('rename-id-btn').style.display = 'none';
+    document.getElementById('user-id-hint').classList.add('hidden');
     ['user-id', 'user-keycloak-id', 'user-username', 'user-phone'].forEach(id => {
         document.getElementById(id).disabled = false;
     });
@@ -1497,15 +1530,19 @@ function editUser(user) {
     document.getElementById('user-dialog-title').textContent = 'Benutzer bearbeiten';
     document.getElementById('user-edit-id').value = user.id;
     document.getElementById('user-id').value = user.id;
-    document.getElementById('user-keycloak-id').value = user.keycloak_id;
-    document.getElementById('user-username').value = user.username;
-    document.getElementById('user-display-name').value = user.display_name;
+    document.getElementById('user-keycloak-id').value = user.keycloak_id || '';
+    document.getElementById('user-username').value = user.username || '';
+    document.getElementById('user-display-name').value = user.display_name || '';
     document.getElementById('user-phone').value = user.phone_number || '';
     document.getElementById('user-role').value = user.role || 'user';
-    ['user-id', 'user-keycloak-id', 'user-username'].forEach(id => {
-        document.getElementById(id).disabled = true;
+    // ID ist gesperrt — Umbenennung über eigenes Dialog
+    document.getElementById('user-id').disabled = true;
+    document.getElementById('user-id-hint').classList.remove('hidden');
+    // Alle anderen Felder editierbar
+    ['user-keycloak-id', 'user-username', 'user-phone'].forEach(id => {
+        document.getElementById(id).disabled = false;
     });
-    document.getElementById('user-phone').disabled = false;
+    document.getElementById('rename-id-btn').style.display = '';
     document.getElementById('user-dialog').showModal();
 }
 
@@ -1514,11 +1551,15 @@ async function saveUser(e) {
     const editId = document.getElementById('user-edit-id').value;
     try {
         if (editId) {
+            const phone = document.getElementById('user-phone').value.trim();
             await api('/users/' + editId, {
                 method: 'PATCH',
                 body: JSON.stringify({
                     display_name: document.getElementById('user-display-name').value,
-                    role: document.getElementById('user-role').value,
+                    role:         document.getElementById('user-role').value,
+                    keycloak_id:  document.getElementById('user-keycloak-id').value || undefined,
+                    username:     document.getElementById('user-username').value || undefined,
+                    phone_number: phone || null,
                 }),
             });
         } else {
@@ -1526,17 +1567,41 @@ async function saveUser(e) {
             await api('/users/', {
                 method: 'POST',
                 body: JSON.stringify({
-                    id: document.getElementById('user-id').value,
-                    keycloak_id: document.getElementById('user-keycloak-id').value,
-                    username: document.getElementById('user-username').value,
+                    id:           document.getElementById('user-id').value,
+                    keycloak_id:  document.getElementById('user-keycloak-id').value,
+                    username:     document.getElementById('user-username').value,
                     display_name: document.getElementById('user-display-name').value,
                     phone_number: phone || null,
-                    role: document.getElementById('user-role').value,
+                    role:         document.getElementById('user-role').value,
                 }),
             });
         }
         document.getElementById('user-dialog').close();
         showSuccess('Benutzer gespeichert');
+        loadUsers();
+    } catch (e) { showError(e.message); }
+}
+
+function openRenameIdDialog() {
+    const currentId = document.getElementById('user-edit-id').value;
+    document.getElementById('rename-current-id').textContent = currentId;
+    document.getElementById('rename-new-id').value = '';
+    document.getElementById('rename-id-dialog').showModal();
+}
+
+async function confirmRenameId() {
+    const currentId = document.getElementById('rename-current-id').textContent;
+    const newId     = document.getElementById('rename-new-id').value.trim();
+    if (!newId) { showError('Neue ID ist erforderlich'); return; }
+    if (newId === currentId) { showError('Neue ID ist identisch'); return; }
+    try {
+        await api('/users/' + currentId + '/rename-id', {
+            method: 'POST',
+            body: JSON.stringify({ new_id: newId }),
+        });
+        document.getElementById('rename-id-dialog').close();
+        document.getElementById('user-dialog').close();
+        showSuccess(`ID geändert: ${currentId} → ${newId}`);
         loadUsers();
     } catch (e) { showError(e.message); }
 }
