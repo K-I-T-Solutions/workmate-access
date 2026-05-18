@@ -7,5 +7,6 @@ from .access_log import AccessLog
 from .nfc_chip import NfcChip
 from .otp_code import OtpCode
 from .yubikey import UserYubikey
+from .guest_token import GuestToken
 
-__all__ = ["Base", "User", "RoomGroup", "Room", "Permission", "AccessLog", "NfcChip", "OtpCode", "UserYubikey"]
+__all__ = ["Base", "User", "RoomGroup", "Room", "Permission", "AccessLog", "NfcChip", "OtpCode", "UserYubikey", "GuestToken"]

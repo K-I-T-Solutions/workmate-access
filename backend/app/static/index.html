@@ -694,10 +694,16 @@
                     <h1 class="text-xl font-bold text-slate-900">SSO / Keycloak</h1>
                     <p class="text-slate-500 text-sm mt-0.5">Benutzer und Sessions direkt über die Keycloak Admin API verwalten</p>
                 </div>
-                <button onclick="openKcUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Neuer KC-Benutzer
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openGuestTokenDialog()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                        Gast-Link
+                    </button>
+                    <button onclick="openKcUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Neuer Benutzer
+                    </button>
+                </div>
             </div>
 
             <!-- Suchleiste -->
@@ -714,7 +720,7 @@
                 <div class="overflow-x-auto">
                     <table class="data-table">
                         <thead><tr>
-                            <th>Benutzername</th><th>E-Mail</th><th>Name</th><th>Status</th><th>Sessions</th><th>Rollen</th><th>Aktionen</th>
+                            <th>Benutzername</th><th>E-Mail</th><th>Name</th><th>Status</th><th>Sessions</th><th>Rollen</th><th>Passwort</th><th>Aktionen</th>
                         </tr></thead>
                         <tbody id="kc-users-table">
                             <tr><td colspan="7" class="empty-state">Wird geladen…</td></tr>
@@ -1013,11 +1019,102 @@
                 <input id="kcu-temp" type="checkbox" checked class="rounded">
                 Benutzer muss Passwort beim ersten Login ändern
             </label>
+            <div class="border-t border-slate-100 pt-3">
+                <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer font-medium mb-2">
+                    <input id="kcu-also-db" type="checkbox" checked class="rounded">
+                    Auch in lokaler Datenbank anlegen
+                </label>
+                <div id="kcu-db-fields" class="space-y-2 pl-6">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Benutzer-ID *</label>
+                            <input id="kcu-db-id" type="text" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">Rolle</label>
+                            <select id="kcu-db-role" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <option value="user">Benutzer</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Anzeigename</label>
+                        <input id="kcu-db-display" type="text" placeholder="Vor- und Nachname" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Telefon (E.164, optional)</label>
+                        <input id="kcu-db-phone" type="text" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    </div>
+                </div>
+            </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 mt-4">
                 <button type="button" onclick="document.getElementById('kc-user-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
                 <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Anlegen</button>
             </div>
         </form>
+    </div>
+</dialog>
+
+<!-- Dialog: Passwort zurücksetzen -->
+<dialog id="kc-pw-dialog">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Passwort zurücksetzen</h2>
+        <p id="kc-pw-dialog-user" class="text-sm text-slate-500 mb-4"></p>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Neues Passwort</label>
+                <input id="kc-pw-input" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+            <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input id="kc-pw-temp" type="checkbox" checked class="rounded">
+                Benutzer muss Passwort beim nächsten Login ändern
+            </label>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
+            <button onclick="document.getElementById('kc-pw-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
+            <button onclick="saveKcPassword()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+        </div>
+    </div>
+</dialog>
+
+<!-- Dialog: Gast-Zugang generieren -->
+<dialog id="guest-token-dialog">
+    <div class="p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-4">Gast-Zugang generieren</h2>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Raum *</label>
+                <select id="guest-room-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Beschreibung (optional)</label>
+                <input id="guest-label" type="text" placeholder="z.B. Lieferant 18.05." class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Gültig für (Stunden)</label>
+                <select id="guest-hours" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="1">1 Stunde</option>
+                    <option value="4">4 Stunden</option>
+                    <option value="8">8 Stunden</option>
+                    <option value="24" selected>24 Stunden</option>
+                    <option value="72">3 Tage</option>
+                    <option value="168">7 Tage</option>
+                </select>
+            </div>
+        </div>
+        <!-- Ergebnis -->
+        <div id="guest-result" style="display:none" class="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <p class="text-xs font-semibold text-emerald-700 mb-1">Link generiert — einmalig verwendbar:</p>
+            <div class="flex items-center gap-2">
+                <code id="guest-link" class="flex-1 text-xs break-all text-emerald-900"></code>
+                <button onclick="copyGuestLink()" class="flex-shrink-0 px-2 py-1 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700">Kopieren</button>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
+            <button onclick="document.getElementById('guest-token-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Schließen</button>
+            <button id="guest-generate-btn" onclick="generateGuestToken()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Generieren</button>
+        </div>
     </div>
 </dialog>
 
@@ -1987,8 +2084,8 @@ async function loadKcUsers() {
                 ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Aktiv</span>'
                 : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Deaktiviert</span>';
             const toggleBtn = enabled
-                ? `<button class="btn-sm btn-outline-amber" onclick="disableKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Deaktivieren">${IC.trash} Sperren</button>`
-                : `<button class="btn-sm btn-outline-emerald" onclick="enableKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Aktivieren">${IC.edit} Entsperren</button>`;
+                ? `<button class="btn-sm btn-outline-amber" onclick="disableKcUser('${esc(u.id)}', '${esc(u.username)}')">${IC.trash} Sperren</button>`
+                : `<button class="btn-sm btn-outline-emerald" onclick="enableKcUser('${esc(u.id)}', '${esc(u.username)}')">${IC.edit} Entsperren</button>`;
             return `<tr>
                 <td><code>${esc(u.username)}</code></td>
                 <td>${esc(u.email || '—')}</td>
@@ -1996,8 +2093,9 @@ async function loadKcUsers() {
                 <td>${statusBadge}</td>
                 <td><button class="btn-sm btn-outline" onclick="openKcSessions('${esc(u.id)}', '${esc(u.username)}')">Sessions</button></td>
                 <td><button class="btn-sm btn-outline" onclick="openKcRoleDialog('${esc(u.id)}', '${esc(u.username)}')">Rollen</button></td>
+                <td><button class="btn-sm btn-outline" onclick="openKcPwDialog('${esc(u.id)}', '${esc(u.username)}')">Reset</button></td>
                 <td class="actions">${toggleBtn}
-                    <button class="btn-sm btn-danger" onclick="deleteKcUser('${esc(u.id)}', '${esc(u.username)}')" title="Löschen">${IC.trash} Löschen</button>
+                    <button class="btn-sm btn-danger" onclick="deleteKcUser('${esc(u.id)}', '${esc(u.username)}')">${IC.trash} Löschen</button>
                 </td>
             </tr>`;
         }).join('');
@@ -2005,30 +2103,113 @@ async function loadKcUsers() {
 }
 
 function openKcUserDialog() {
-    document.getElementById('kcu-firstname').value = '';
-    document.getElementById('kcu-lastname').value = '';
-    document.getElementById('kcu-username').value = '';
-    document.getElementById('kcu-email').value = '';
-    document.getElementById('kcu-password').value = '';
+    ['firstname','lastname','username','email','password','db-id','db-display','db-phone'].forEach(f => {
+        document.getElementById('kcu-' + f).value = '';
+    });
     document.getElementById('kcu-temp').checked = true;
+    document.getElementById('kcu-also-db').checked = true;
+    document.getElementById('kcu-db-role').value = 'user';
     document.getElementById('kc-user-dialog').showModal();
 }
 
+// Anzeigename aus Vor+Nachname vorausfüllen
+document.getElementById('kcu-firstname')?.addEventListener('input', _prefillDisplay);
+document.getElementById('kcu-lastname')?.addEventListener('input', _prefillDisplay);
+function _prefillDisplay() {
+    const fn = document.getElementById('kcu-firstname').value.trim();
+    const ln = document.getElementById('kcu-lastname').value.trim();
+    const d  = document.getElementById('kcu-db-display');
+    if (!d.dataset.edited) d.value = [fn, ln].filter(Boolean).join(' ');
+}
+document.getElementById('kcu-db-display')?.addEventListener('input', e => {
+    e.target.dataset.edited = e.target.value ? '1' : '';
+});
+
 async function saveKcUser(e) {
     e.preventDefault();
-    const body = {
-        username: document.getElementById('kcu-username').value.trim(),
-        email: document.getElementById('kcu-email').value.trim(),
-        first_name: document.getElementById('kcu-firstname').value.trim(),
-        last_name: document.getElementById('kcu-lastname').value.trim(),
-        password: document.getElementById('kcu-password').value,
+    const username = document.getElementById('kcu-username').value.trim();
+    const kcBody = {
+        username,
+        email:              document.getElementById('kcu-email').value.trim(),
+        first_name:         document.getElementById('kcu-firstname').value.trim(),
+        last_name:          document.getElementById('kcu-lastname').value.trim(),
+        password:           document.getElementById('kcu-password').value,
         temporary_password: document.getElementById('kcu-temp').checked,
     };
-    const res = await api('/admin/kc/users', { method: 'POST', body: JSON.stringify(body) });
-    if (!res) return;
-    showSuccess(`Benutzer "${body.username}" in Keycloak angelegt`);
+    const kcRes = await api('/admin/kc/users', { method: 'POST', body: JSON.stringify(kcBody) });
+    if (!kcRes) return;
+
+    if (document.getElementById('kcu-also-db').checked) {
+        const dbId = document.getElementById('kcu-db-id').value.trim();
+        if (!dbId) { showError('Benutzer-ID für DB fehlt'); return; }
+        const dbBody = {
+            id:           dbId,
+            keycloak_id:  kcRes.kc_id,
+            username,
+            display_name: document.getElementById('kcu-db-display').value.trim() || username,
+            role:         document.getElementById('kcu-db-role').value,
+        };
+        const phone = document.getElementById('kcu-db-phone').value.trim();
+        if (phone) dbBody.phone_number = phone;
+        const dbRes = await api('/users/', { method: 'POST', body: JSON.stringify(dbBody) });
+        if (!dbRes) return;
+        showSuccess(`"${username}" in Keycloak und lokaler DB angelegt`);
+    } else {
+        showSuccess(`"${username}" in Keycloak angelegt`);
+    }
     document.getElementById('kc-user-dialog').close();
     loadKcUsers();
+}
+
+// ── Passwort-Reset ──────────────────────────────────────────────────────────
+let _kcPwCurrentUser = null;
+function openKcPwDialog(kcId, username) {
+    _kcPwCurrentUser = kcId;
+    document.getElementById('kc-pw-dialog-user').textContent = `Benutzer: ${username}`;
+    document.getElementById('kc-pw-input').value = '';
+    document.getElementById('kc-pw-temp').checked = true;
+    document.getElementById('kc-pw-dialog').showModal();
+}
+async function saveKcPassword() {
+    const pw = document.getElementById('kc-pw-input').value;
+    if (!pw) { showError('Passwort darf nicht leer sein'); return; }
+    const res = await api(`/admin/kc/users/${_kcPwCurrentUser}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ password: pw, temporary: document.getElementById('kc-pw-temp').checked }),
+    });
+    if (res) { showSuccess('Passwort zurückgesetzt'); document.getElementById('kc-pw-dialog').close(); }
+}
+
+// ── Gast-Zugang ─────────────────────────────────────────────────────────────
+async function openGuestTokenDialog() {
+    document.getElementById('guest-result').style.display = 'none';
+    document.getElementById('guest-label').value = '';
+    document.getElementById('guest-hours').value = '24';
+    const sel = document.getElementById('guest-room-id');
+    sel.innerHTML = '<option>Wird geladen…</option>';
+    document.getElementById('guest-token-dialog').showModal();
+    const rooms = await api('/rooms/');
+    if (!rooms) return;
+    sel.innerHTML = rooms.map(r => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
+}
+
+async function generateGuestToken() {
+    const body = {
+        room_id: document.getElementById('guest-room-id').value,
+        label:   document.getElementById('guest-label').value.trim() || null,
+        hours:   parseInt(document.getElementById('guest-hours').value),
+    };
+    const res = await api('/access/guest/generate', { method: 'POST', body: JSON.stringify(body) });
+    if (!res) return;
+    const link = `${location.origin}/api/v1/access/guest/use/${res.id}`;
+    document.getElementById('guest-link').textContent = link;
+    document.getElementById('guest-result').style.display = '';
+    document.getElementById('guest-generate-btn').textContent = 'Neu generieren';
+}
+
+function copyGuestLink() {
+    navigator.clipboard.writeText(document.getElementById('guest-link').textContent)
+        .then(() => showSuccess('Link kopiert'));
 }
 
 async function disableKcUser(kcId, username) {

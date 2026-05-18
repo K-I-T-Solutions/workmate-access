@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from .core.config import settings
-from .api.routes import access, rooms, room_groups, users, permissions, nfc_chips, yubikeys, keycloak_admin
+from .api.routes import access, rooms, room_groups, users, permissions, nfc_chips, yubikeys, keycloak_admin, guest
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -32,6 +32,7 @@ app.include_router(permissions.router)
 app.include_router(nfc_chips.router)
 app.include_router(yubikeys.router)
 app.include_router(keycloak_admin.router)
+app.include_router(guest.router)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
