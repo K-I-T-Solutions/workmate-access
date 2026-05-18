@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
 class UserCreate(BaseModel):
     id: str
+    workmate_id: Optional[str] = None
     keycloak_id: str
     username: str
     display_name: str
@@ -21,6 +22,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     display_name: Optional[str] = None
     role: Optional[str] = None
+    workmate_id: Optional[str] = None
     keycloak_id: Optional[str] = None
     username: Optional[str] = None
     phone_number: Optional[str] = None
@@ -30,6 +32,7 @@ class RenameIdBody(BaseModel):
 
 class UserResponse(BaseModel):
     id: str
+    workmate_id: Optional[str] = None
     username: str
     display_name: str
     role: str = "user"
@@ -54,6 +57,15 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), _: TokenData = 
 def list_users(db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
     """Liste alle Users auf"""
     return db.query(User).filter(User.is_active == True).all()
+
+@router.get("/wm/{workmate_id}", response_model=UserResponse)
+def get_user_by_workmate_id(workmate_id: str, db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):
+    """Benutzer anhand der plattformübergreifenden Workmate-ID abrufen (z.B. WM-100)"""
+    user = db.query(User).filter(User.workmate_id == workmate_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: str, db: Session = Depends(get_db), _: TokenData = Depends(get_current_user)):

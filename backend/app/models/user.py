@@ -7,6 +7,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True)
+    workmate_id = Column(String, unique=True, nullable=True, index=True, comment="WM-100 — plattformübergreifende ID")
     keycloak_id = Column(String, unique=True)
     username = Column(String, unique=True)
     display_name = Column(String)
