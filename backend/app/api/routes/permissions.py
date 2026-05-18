@@ -1,4 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 import datetime
@@ -93,3 +96,38 @@ def delete_permission(permission_id: int, db: Session = Depends(get_db), _: Toke
     perm.is_active = False
     db.commit()
     return None
+
+
+@router.get("/export")
+def export_permissions_csv(db: Session = Depends(get_db), _: TokenData = Depends(require_admin)):
+    """Alle Berechtigungen als CSV exportieren."""
+    perms = db.query(Permission).filter(Permission.is_active == True).all()
+    users = {u.id: u for u in db.query(User).all()}
+    rooms = {r.id: r for r in db.query(Room).all()}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Benutzer-ID", "Anzeigename", "Raum-ID", "Raum", "Level",
+                     "Gültig ab", "Gültig bis", "Zeit von", "Zeit bis", "Wochentage"])
+    for p in perms:
+        u = users.get(p.user_id)
+        r = rooms.get(p.room_id)
+        writer.writerow([
+            p.user_id,
+            u.display_name if u else "",
+            p.room_id,
+            r.name if r else "",
+            p.access_level,
+            p.valid_from or "",
+            p.valid_until or "",
+            p.time_from or "",
+            p.time_until or "",
+            p.weekdays or "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=berechtigungen.csv"},
+    )

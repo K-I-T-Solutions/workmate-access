@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     MAX_FAILED_ATTEMPTS: int = 3
     LOCKOUT_DURATION: int = 300
 
+    # Zigbee2MQTT (optional — leer lassen wenn nicht genutzt)
+    ZIGBEE2MQTT_HOST: str = ""      # z.B. "192.168.178.50"
+    ZIGBEE2MQTT_PORT: int = 1883
+    ZIGBEE2MQTT_USER: str = ""
+    ZIGBEE2MQTT_PASSWORD: str = ""
+    ZIGBEE_UNLOCK_PAYLOAD: str = '{"state":"UNLOCK"}'
+    ZIGBEE_LOCK_PAYLOAD:   str = '{"state":"LOCK"}'
+    ZIGBEE_RELOCK_DELAY:   int = 5  # Sekunden bis automatisches Zurückschließen
+
     # sent.dm OTP
     SENT_DM_API_KEY: str = ""
     SENT_DM_CUSTOMER_ID: str = ""

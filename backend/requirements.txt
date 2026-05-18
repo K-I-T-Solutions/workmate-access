@@ -6,7 +6,10 @@ pydantic_settings
 alembic
 psycopg2-binary          # PostgreSQL Treiber
 python-dotenv            # .env Support
-httpx                    # Für Zitadel API Calls
+httpx                    # Für Keycloak API Calls
 python-multipart         # Form Data
 sentdm                   # OTP via WhatsApp/SMS
 python-jose[cryptography] # JWT-Verifikation für Keycloak
+slowapi                  # Rate-Limiting
+sse-starlette            # Server-Sent Events (Echtzeit-Benachrichtigungen)
+paho-mqtt                # Zigbee2MQTT Integration

@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
-from ..models import User, Room, Permission, AccessLog, NfcChip
+from ..models import User, Room, Permission, AccessLog, NfcChip, Presence
+from . import zigbee_service
+from .event_bus import publish as bus_publish
 from ..core.config import settings
 from ..schemas.access import (
     AccessVerifyRequest,
@@ -181,21 +183,26 @@ class AccessService:
         )
 
         if has_access:
-            return CardVerifyResponse(
-                access=True,
-                message="Zugang gewährt",
-                user_id=user.id,
-                user_name=user.display_name,
-                timestamp=timestamp
-            )
+            AccessService._update_presence(db, user.id, request.room_id, timestamp)
+            if room.zigbee_lock_id:
+                zigbee_service.unlock(room.zigbee_lock_id)
         else:
-            return CardVerifyResponse(
-                access=False,
-                message="Keine Berechtigung für diesen Raum",
-                user_id=user.id,
-                user_name=user.display_name,
-                timestamp=timestamp
-            )
+            bus_publish({
+                "type": "access_denied",
+                "user_id":   user.id,
+                "user_name": user.display_name,
+                "room_id":   request.room_id,
+                "reason":    reason,
+                "timestamp": timestamp.isoformat(),
+            })
+
+        return CardVerifyResponse(
+            access=has_access,
+            message="Zugang gewährt" if has_access else "Keine Berechtigung für diesen Raum",
+            user_id=user.id,
+            user_name=user.display_name,
+            timestamp=timestamp
+        )
 
     @staticmethod
     def check_room_access(db: Session, user: User, room_id: str) -> tuple[bool, str]:
@@ -248,6 +255,20 @@ class AccessService:
                         f" und {permission.time_until.strftime('%H:%M')} Uhr")
 
         return None
+
+    @staticmethod
+    def _update_presence(db: Session, user_id: str, room_id: str, timestamp: datetime) -> None:
+        """Toggle-Logik: erster Scan = betreten, zweiter Scan = verlassen."""
+        open_entry = db.query(Presence).filter(
+            Presence.user_id == user_id,
+            Presence.room_id == room_id,
+            Presence.left_at == None,
+        ).first()
+        if open_entry:
+            open_entry.left_at = timestamp
+        else:
+            db.add(Presence(user_id=user_id, room_id=room_id, entered_at=timestamp))
+        db.commit()
 
     @staticmethod
     def _log_card_access(
