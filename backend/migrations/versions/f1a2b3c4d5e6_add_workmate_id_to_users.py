@@ -1,6 +1,6 @@
 """add workmate_id to users
 
-Revision ID: f1a2b3c4d5e6
+Revision ID: b1c2d3e4f5a6
 Revises: e3f4a5b6c7d8
 Create Date: 2026-05-18
 
@@ -8,7 +8,7 @@ Create Date: 2026-05-18
 from alembic import op
 import sqlalchemy as sa
 
-revision = 'f1a2b3c4d5e6'
+revision = 'b1c2d3e4f5a6'
 down_revision = 'e3f4a5b6c7d8'
 branch_labels = None
 depends_on = None
