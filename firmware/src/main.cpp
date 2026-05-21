@@ -122,7 +122,18 @@ void loop() {
   state.lastSeenIdentifier = userIdentifier;
 
   if (WiFi.status() == WL_CONNECTED) {
-    bool access = verifyNFCCard(settings, userIdentifier);
+    bool access = false;
+
+    // YubiKey 5 NFC: NDEF-OTP auslesen und per Yubico-API prüfen
+    String otp = readYubiKeyOTP(nfc);
+    if (otp.length() == 44) {
+      Serial.println("YubiKey OTP erkannt: " + otp.substring(0, 12) + "...");
+      access = verifyYubiKey(settings, otp);
+    } else {
+      // Normaler NFC-Chip (UID-basiert)
+      access = verifyNFCCard(settings, userIdentifier);
+    }
+
     state.lastAccessResult = access ? "GRANTED" : "DENIED";
     blinkLED(access ? LED_SUCCESS : LED_DENIED, access ? 3 : 2);
   } else {
