@@ -9,14 +9,17 @@ from ...db.database import get_db
 from ...models import Permission, User, Room
 from ...core.auth import TokenData, require_admin
 from pydantic import BaseModel
+from typing import Literal
 
 router = APIRouter(prefix="/api/v1/permissions", tags=["permissions"])
+
+AccessLevel = Literal["read", "write", "admin"]
 
 
 class PermissionCreate(BaseModel):
     user_id: str
     room_id: str
-    access_level: str = "read"
+    access_level: AccessLevel = "read"
     valid_from:  Optional[datetime.date] = None
     valid_until: Optional[datetime.date] = None
     time_from:   Optional[datetime.time] = None
@@ -25,7 +28,7 @@ class PermissionCreate(BaseModel):
 
 
 class PermissionUpdate(BaseModel):
-    access_level: Optional[str] = None
+    access_level: Optional[AccessLevel] = None
     valid_from:  Optional[datetime.date] = None
     valid_until: Optional[datetime.date] = None
     time_from:   Optional[datetime.time] = None
@@ -37,7 +40,7 @@ class PermissionResponse(BaseModel):
     id: int
     user_id: str
     room_id: str
-    access_level: str
+    access_level: AccessLevel
     is_active: bool
     valid_from:  Optional[datetime.date] = None
     valid_until: Optional[datetime.date] = None

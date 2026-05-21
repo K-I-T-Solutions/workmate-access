@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from ...db.database import get_db
-from ...core.auth import TokenData, require_admin
+from ...core.auth import TokenData, require_admin, verify_device_token
 from ...schemas.access import (
     AccessVerifyRequest,
     AccessVerifyResponse,
@@ -30,7 +30,8 @@ router = APIRouter(prefix="/api/v1/access", tags=["access"])
 @router.post("/verify", response_model=AccessVerifyResponse)
 def verify_access(
     request: AccessVerifyRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_device_token),
 ):
     """
     Prüfe Zugang für einen User zu einem Room
@@ -51,7 +52,8 @@ def verify_access(
 @router.post("/verify-card", response_model=CardVerifyResponse)
 def verify_card(
     request: CardVerifyRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_device_token),
 ):
     """
     Verifiziere NFC-Karten Zugang (für ESP32 Geräte)
@@ -88,6 +90,7 @@ def get_access_logs(
     granted: Optional[bool] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    offset: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     _: TokenData = Depends(require_admin),
@@ -105,7 +108,7 @@ def get_access_logs(
         query = query.filter(AccessLog.timestamp >= datetime.combine(date_from, dtime.min))
     if date_to:
         query = query.filter(AccessLog.timestamp <= datetime.combine(date_to, dtime.max))
-    return query.order_by(AccessLog.timestamp.desc()).limit(limit).all()
+    return query.order_by(AccessLog.timestamp.desc()).offset(offset).limit(limit).all()
 
 @router.get("/logs/export")
 def export_logs_csv(
@@ -179,7 +182,11 @@ class YubikeyVerifyRequest(BaseModel):
 
 
 @router.post("/yubikey/verify", response_model=CardVerifyResponse)
-def verify_yubikey(request: YubikeyVerifyRequest, db: Session = Depends(get_db)):
+def verify_yubikey(
+    request: YubikeyVerifyRequest,
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_device_token),
+):
     """
     Verifiziere Yubico OTP und prüfe Raum-Berechtigung.
     Wird vom ESP32 aufgerufen nachdem der YubiKey NFC-OTP via NDEF gelesen wurde.

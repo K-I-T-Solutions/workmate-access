@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: str = '["*"]'
 
+    # Device Authentication (ESP32 / NFC Reader)
+    DEVICE_API_KEY: str = ""  # Leer = deaktiviert; sonst X-Device-Token Header prüfen
+
     # Access Control
     DEFAULT_LOCK_TIMEOUT: int = 5
     MAX_FAILED_ATTEMPTS: int = 3
@@ -76,7 +79,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        """Parse CORS_ORIGINS string to list"""
-        return json.loads(self.CORS_ORIGINS)
+        """Parse CORS_ORIGINS string to list — handles both '*' and '["*"]' formats"""
+        raw = self.CORS_ORIGINS.strip()
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, list) else [str(parsed)]
+        except json.JSONDecodeError:
+            return [raw]
 
 settings = Settings()

@@ -166,8 +166,6 @@ class AccessService:
             return CardVerifyResponse(
                 access=False,
                 message="Raum nicht gefunden",
-                user_id=user.id,
-                user_name=user.display_name,
                 timestamp=timestamp
             )
 
@@ -207,8 +205,8 @@ class AccessService:
         return CardVerifyResponse(
             access=has_access,
             message="Zugang gewährt" if has_access else "Keine Berechtigung für diesen Raum",
-            user_id=user.id,
-            user_name=user.display_name,
+            user_id=user.id if has_access else None,
+            user_name=user.display_name if has_access else None,
             timestamp=timestamp
         )
 

@@ -4,7 +4,7 @@ import time
 
 import httpx
 from jose import jwt, JWTError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from .config import settings
@@ -88,3 +88,14 @@ def require_admin(user: TokenData = Depends(get_current_user)) -> TokenData:
             detail="Admin-Berechtigung erforderlich",
         )
     return user
+
+
+def verify_device_token(x_device_token: Optional[str] = Header(default=None)) -> None:
+    """Prüft X-Device-Token wenn DEVICE_API_KEY konfiguriert ist."""
+    if not settings.DEVICE_API_KEY:
+        return  # Kein Key konfiguriert → kein Check
+    if x_device_token != settings.DEVICE_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiger oder fehlender X-Device-Token",
+        )

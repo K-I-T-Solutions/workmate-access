@@ -7,6 +7,9 @@ from ...models.nfc_chip import NfcChip
 from ...core.auth import TokenData, get_current_user, require_admin
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Literal
+
+UserRole = Literal["user", "admin"]
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
@@ -17,11 +20,11 @@ class UserCreate(BaseModel):
     username: str
     display_name: str
     phone_number: Optional[str] = None
-    role: str = "user"
+    role: UserRole = "user"
 
 class UserUpdate(BaseModel):
     display_name: Optional[str] = None
-    role: Optional[str] = None
+    role: Optional[UserRole] = None
     workmate_id: Optional[str] = None
     keycloak_id: Optional[str] = None
     username: Optional[str] = None
@@ -35,7 +38,7 @@ class UserResponse(BaseModel):
     workmate_id: Optional[str] = None
     username: str
     display_name: str
-    role: str = "user"
+    role: UserRole = "user"
     keycloak_id: str
     phone_number: Optional[str] = None
     is_active: bool
