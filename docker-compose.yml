@@ -8,6 +8,12 @@ services:
       DATABASE_URL: postgresql://workmate:workmate@central_postgres:5432/workmate_access
     networks:
       - core_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 networks:
   core_network:

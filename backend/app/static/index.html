@@ -11,7 +11,7 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { DEFAULT: '#4f46e5', hover: '#4338ca', light: '#eef2ff' }
+                        brand: { DEFAULT: '#00b8d4', dim: '#0097b2', light: '#e0feff', glow: '#00e5ff' }
                     }
                 }
             }
@@ -21,7 +21,7 @@
         [x-cloak] { display: none; }
         .sidebar-link { display:flex; align-items:center; gap:0.75rem; margin:0 0.5rem; padding:0.625rem 1rem; border-radius:0.75rem; color:rgba(255,255,255,0.85); font-size:0.875rem; font-weight:500; cursor:pointer; transition:all 0.15s ease; }
         .sidebar-link:hover { background:rgba(255,255,255,0.1); color:#fff; }
-        .sidebar-link.active { background:#4f46e5; color:#fff; font-weight:600; box-shadow:0 4px 14px rgba(79,70,229,0.4); }
+        .sidebar-link.active { background:#00b8d4; color:#fff; font-weight:600; box-shadow:0 4px 14px rgba(0,184,212,0.4); }
 
         /* Klassen die vom JS dynamisch gesetzt werden */
         .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
@@ -97,19 +97,19 @@
             .btn-sm { padding: 0.375rem 0.5rem; font-size: 0.7rem; }
         }
         /* ===== RÄUME GRUPPEN ===== */
-        .room-group-header { display:flex; align-items:center; gap:0.5rem; padding:0.625rem 1rem; background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #6366f1; border-radius:0.75rem 0.75rem 0 0; }
+        .room-group-header { display:flex; align-items:center; gap:0.5rem; padding:0.625rem 1rem; background:#f8fafc; border:1px solid #e2e8f0; border-left:3px solid #00b8d4; border-radius:0.75rem 0.75rem 0 0; }
         .room-group-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
         .room-group:last-child .room-group-header:not(:has(+ *)) { border-radius:0.75rem; }
         .color-swatch { width:1.5rem; height:1.5rem; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all 0.15s; flex-shrink:0; }
-        .color-swatch.selected, .color-swatch:hover { border-color: white; box-shadow: 0 0 0 2px #6366f1; transform:scale(1.15); }
+        .color-swatch.selected, .color-swatch:hover { border-color: white; box-shadow: 0 0 0 2px #00b8d4; transform:scale(1.15); }
         /* ===== BERECHTIGUNGEN KARTEN ===== */
         .perm-card { background:#fff; border-radius:0.75rem; border:1px solid #e2e8f0; padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
         /* Wochentag-Toggles im Permission-Dialog */
         .perm-day-toggle { display:flex; align-items:center; gap:0.25rem; padding:0.25rem 0.5rem; border-radius:0.375rem; border:1px solid #e2e8f0; font-size:0.75rem; font-weight:600; color:#64748b; cursor:pointer; transition:all 0.15s; user-select:none; }
-        .perm-day-toggle:has(input:checked) { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+        .perm-day-toggle:has(input:checked) { background:#00b8d4; border-color:#00b8d4; color:#fff; }
         .perm-day-toggle input { display:none; }
         /* Zeitbadge auf Permission-Pills */
-        .time-badge { display:inline-flex; align-items:center; gap:0.2rem; background:rgba(99,102,241,0.1); color:#6366f1; border-radius:0.25rem; padding:0.1rem 0.35rem; font-size:0.65rem; font-weight:600; margin-left:0.25rem; }
+        .time-badge { display:inline-flex; align-items:center; gap:0.2rem; background:rgba(0,229,255,0.1); color:#00b8d4; border-radius:0.25rem; padding:0.1rem 0.35rem; font-size:0.65rem; font-weight:600; margin-left:0.25rem; }
         /* ===== DARK MODE ===== */
         body.dark #stat-recent-logs .text-slate-800 { color:#f1f5f9 !important; }
         body.dark #stat-recent-logs .text-slate-400 { color:#64748b !important; }
@@ -161,7 +161,7 @@
         /* ===== LANDING PAGE ===== */
         .landing-page {
             min-height: 100vh;
-            background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%), #0f172a;
+            background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,229,255,0.25) 0%, transparent 70%), #0f172a;
             display: flex; flex-direction: column; color: #e2e8f0;
         }
         .landing-nav {
@@ -176,8 +176,8 @@
         }
         .landing-badge {
             display: inline-flex; align-items: center;
-            background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35);
-            color: #a5b4fc; font-size: 0.75rem; font-weight: 600;
+            background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.35);
+            color: #67eeff; font-size: 0.75rem; font-weight: 600;
             letter-spacing: 0.08em; text-transform: uppercase;
             padding: 0.35rem 0.875rem; border-radius: 9999px; margin-bottom: 1.75rem;
         }
@@ -187,7 +187,7 @@
             margin-bottom: 1.25rem;
         }
         .landing-headline-accent {
-            background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            background: linear-gradient(135deg, #00e5ff 0%, #0097b2 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
@@ -197,19 +197,19 @@
         }
         .landing-btn-primary {
             display: inline-flex; align-items: center; gap: 0.5rem;
-            background: #4f46e5; color: #fff; font-weight: 600; font-size: 0.9375rem;
+            background: #00b8d4; color: #fff; font-weight: 600; font-size: 0.9375rem;
             padding: 0.75rem 1.75rem; border-radius: 0.75rem; border: none; cursor: pointer;
-            box-shadow: 0 0 0 0 rgba(79,70,229,0); transition: all 0.2s ease;
+            box-shadow: 0 0 0 0 rgba(0,184,212,0); transition: all 0.2s ease;
             margin-bottom: 3.5rem;
         }
-        .landing-btn-primary:hover { background: #4338ca; box-shadow: 0 8px 24px rgba(79,70,229,0.45); transform: translateY(-1px); }
+        .landing-btn-primary:hover { background: #0097b2; box-shadow: 0 8px 24px rgba(0,184,212,0.45); transform: translateY(-1px); }
         .landing-btn-outline {
             display: inline-flex; align-items: center; gap: 0.5rem;
-            background: transparent; color: #a5b4fc; font-weight: 600; font-size: 0.875rem;
+            background: transparent; color: #67eeff; font-weight: 600; font-size: 0.875rem;
             padding: 0.5rem 1.25rem; border-radius: 0.625rem;
-            border: 1px solid rgba(99,102,241,0.4); cursor: pointer; transition: all 0.15s ease;
+            border: 1px solid rgba(0,229,255,0.4); cursor: pointer; transition: all 0.15s ease;
         }
-        .landing-btn-outline:hover { background: rgba(99,102,241,0.12); color: #fff; border-color: rgba(99,102,241,0.7); }
+        .landing-btn-outline:hover { background: rgba(0,229,255,0.12); color: #fff; border-color: rgba(0,229,255,0.7); }
         .landing-features {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem; width: 100%; max-width: 860px;
@@ -247,14 +247,9 @@
 <!-- Landing Page -->
 <div id="landing" style="display:none" class="landing-page">
     <nav class="landing-nav">
-        <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/50">
-                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <div>
-                <span class="text-white font-bold text-sm tracking-tight">Workmate</span>
-                <span class="text-indigo-400 font-bold text-sm tracking-tight"> Access</span>
-            </div>
+        <div class="flex items-center gap-3">
+            <img src="/static/logo-wm-access.png" class="w-9 h-9 object-contain" alt="">
+            <img src="/static/sign-access.png" class="h-6 object-contain" alt="Workmate Access">
         </div>
         <button onclick="keycloak.login()" class="landing-btn-outline">Anmelden &rarr;</button>
     </nav>
@@ -270,7 +265,7 @@
 
         <div class="landing-features">
             <div class="landing-feature-card">
-                <div class="landing-feature-icon" style="background:rgba(99,102,241,0.15);color:#818cf8">
+                <div class="landing-feature-icon" style="background:rgba(0,229,255,0.15);color:#00e5ff">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                 </div>
                 <div class="landing-feature-title">Single Sign-On (SSO)</div>
@@ -311,13 +306,11 @@
 
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center z-50">
-    <div class="flex items-center gap-3 mb-6">
-        <svg class="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-        <span class="text-2xl font-bold text-white tracking-tight">Workmate Access</span>
+    <div class="flex flex-col items-center gap-4 mb-6">
+        <img src="/static/logo-wm-access.png" class="w-16 h-16 object-contain" alt="">
+        <img src="/static/sign-access.png" class="h-7 object-contain" alt="Workmate Access">
     </div>
-    <svg class="spinner w-6 h-6 text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24">
+    <svg class="spinner w-6 h-6 text-cyan-300 mb-3" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
     </svg>
@@ -348,10 +341,8 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <span class="text-white text-sm font-semibold">Workmate Access</span>
+            <img src="/static/logo-wm-access.png" class="w-6 h-6 object-contain" alt="">
+            <img src="/static/sign-access.png" class="h-4 object-contain" alt="Workmate Access">
         </div>
         <div class="flex items-center gap-2">
             <button id="theme-toggle-mobile" onclick="toggleDark()" class="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
@@ -359,7 +350,7 @@
             </button>
             <div class="relative w-7 h-7 flex-shrink-0">
                 <img id="auth-gravatar-mobile" class="w-7 h-7 rounded-full object-cover absolute inset-0" style="display:none" alt="">
-                <div id="auth-avatar-mobile" class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">?</div>
+                <div id="auth-avatar-mobile" class="w-7 h-7 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">?</div>
             </div>
         </div>
     </header>
@@ -370,15 +361,11 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="w-60 bg-slate-900 flex flex-col flex-shrink-0">
         <div class="px-4 py-5 border-b border-slate-700">
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                </div>
+            <div class="flex items-center gap-3">
+                <img src="/static/logo-wm-access.png" class="w-9 h-9 object-contain flex-shrink-0" alt="">
                 <div>
-                    <div class="text-white font-semibold text-sm leading-tight">Workmate Access</div>
-                    <div class="text-slate-400 text-xs">Admin Panel</div>
+                    <img src="/static/sign-access.png" class="h-5 object-contain" alt="Workmate Access">
+                    <div class="text-slate-400 text-xs mt-0.5">Admin Panel</div>
                 </div>
             </div>
         </div>
@@ -418,7 +405,7 @@
             <div class="flex items-center gap-2.5 mb-3">
                 <div class="relative w-8 h-8 flex-shrink-0">
                     <img id="auth-gravatar" class="w-8 h-8 rounded-full object-cover absolute inset-0" style="display:none" alt="">
-                    <div id="auth-avatar" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">?</div>
+                    <div id="auth-avatar" class="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold">?</div>
                 </div>
                 <div class="text-sm text-slate-300 truncate" id="auth-username"></div>
             </div>
@@ -450,8 +437,8 @@
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Benutzer</span>
-                        <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
                     </div>
                     <div id="stat-users" class="text-3xl font-bold text-slate-900">—</div>
@@ -496,7 +483,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="text-sm font-semibold text-slate-800">Gerade anwesend</span>
                     </div>
-                    <button onclick="loadPresence()" class="text-xs text-indigo-600 hover:underline">Aktualisieren</button>
+                    <button onclick="loadPresence()" class="text-xs text-brand hover:underline">Aktualisieren</button>
                 </div>
                 <div id="presence-list" class="flex flex-wrap gap-2 p-4 min-h-12">
                     <span class="text-sm text-slate-400">Wird geladen…</span>
@@ -541,7 +528,7 @@
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                         <span class="text-sm font-semibold text-slate-800">Letzte Ereignisse</span>
-                        <button onclick="switchTab('logs', document.getElementById('nav-logs'))" class="text-xs text-indigo-600 hover:underline">Alle anzeigen</button>
+                        <button onclick="switchTab('logs', document.getElementById('nav-logs'))" class="text-xs text-brand hover:underline">Alle anzeigen</button>
                     </div>
                     <div id="stat-recent-logs" class="divide-y divide-slate-50">
                         <div class="px-4 py-3 text-sm text-slate-400">Wird geladen…</div>
@@ -559,10 +546,10 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-slate-600">
-                        <input type="checkbox" id="toggle-inactive" class="w-4 h-4 accent-indigo-600" onchange="loadUsers()">
+                        <input type="checkbox" id="toggle-inactive" class="w-4 h-4 accent-cyan-500" onchange="loadUsers()">
                         Inaktive anzeigen
                     </label>
-                    <button onclick="openUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <button onclick="openUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Neuer Benutzer
                     </button>
@@ -593,7 +580,7 @@
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
                         Gruppen
                     </button>
-                    <button onclick="openRoomDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <button onclick="openRoomDialog()" class="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Neuer Raum
                     </button>
@@ -626,7 +613,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                        <input type="checkbox" id="log-auto-refresh" checked class="w-4 h-4 rounded accent-indigo-600">
+                        <input type="checkbox" id="log-auto-refresh" checked class="w-4 h-4 rounded accent-cyan-500">
                         Auto-Refresh
                     </label>
                     <button onclick="exportLogs()" class="flex items-center gap-2 px-3 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">
@@ -639,15 +626,15 @@
                 <div class="flex flex-wrap gap-3 items-end">
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer-ID</label>
-                        <input type="text" id="log-filter-user" placeholder="z.B. KIT-0001" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="text" id="log-filter-user" placeholder="z.B. KIT-0001" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
-                        <input type="text" id="log-filter-room" placeholder="z.B. serverroom" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="text" id="log-filter-room" placeholder="z.B. serverroom" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
-                        <select id="log-filter-granted" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <select id="log-filter-granted" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                             <option value="">Alle</option>
                             <option value="true">Gewährt</option>
                             <option value="false">Verweigert</option>
@@ -655,18 +642,18 @@
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Von</label>
-                        <input type="date" id="log-filter-date-from" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="date" id="log-filter-date-from" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Bis</label>
-                        <input type="date" id="log-filter-date-to" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="date" id="log-filter-date-to" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">Limit</label>
-                        <input type="number" id="log-filter-limit" value="50" min="1" max="500" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <input type="number" id="log-filter-limit" value="50" min="1" max="500" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="loadLogs()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Filtern</button>
+                        <button onclick="loadLogs()" class="px-4 py-1.5 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Filtern</button>
                         <button onclick="resetLogFilters()" class="px-4 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Zurücksetzen</button>
                     </div>
                 </div>
@@ -693,16 +680,16 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                     <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <div class="w-8 h-8 rounded-lg bg-cyan-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         </div>
                         <h2 class="font-semibold text-slate-900 text-sm">Benutzer-Zugang</h2>
                     </div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer-ID</label>
-                    <input type="text" id="verify-user-id" placeholder="z.B. KIT-0001" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-user-id" placeholder="z.B. KIT-0001" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
-                    <input type="text" id="verify-room-id" placeholder="z.B. serverroom" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    <button onclick="verifyAccess()" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
+                    <input type="text" id="verify-room-id" placeholder="z.B. serverroom" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
+                    <button onclick="verifyAccess()" class="w-full px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-result"></div>
                 </div>
 
@@ -714,9 +701,9 @@
                         <h2 class="font-semibold text-slate-900 text-sm">YubiKey</h2>
                     </div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Yubico OTP (44 Zeichen)</label>
-                    <input type="text" id="verify-yubikey-otp" placeholder="ccccccxxxxxx…" maxlength="44" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-yubikey-otp" placeholder="ccccccxxxxxx…" maxlength="44" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
-                    <input type="text" id="verify-yubikey-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-yubikey-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <button onclick="verifyYubikey()" class="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-yubikey-result"></div>
                 </div>
@@ -729,11 +716,11 @@
                         <h2 class="font-semibold text-slate-900 text-sm">NFC-Karte</h2>
                     </div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Karten-UID</label>
-                    <input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-card-uid" placeholder="z.B. 74AFF106" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Ger&auml;te-ID</label>
-                    <input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-device-id" placeholder="z.B. esp32_entrance_01" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <label class="block text-xs font-medium text-slate-500 mb-1">Raum-ID</label>
-                    <input type="text" id="verify-card-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <input type="text" id="verify-card-room" placeholder="z.B. office_main" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
                     <button onclick="verifyCard()" class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors">Pr&uuml;fen</button>
                     <div id="verify-card-result"></div>
                 </div>
@@ -752,7 +739,7 @@
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                         Gast-Link
                     </button>
-                    <button onclick="openKcUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                    <button onclick="openKcUserDialog()" class="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Neuer Benutzer
                     </button>
@@ -762,7 +749,7 @@
             <!-- Suchleiste -->
             <div class="flex gap-3 mb-4">
                 <input id="kc-search" type="text" placeholder="Benutzer suchen…" oninput="loadKcUsers()"
-                    class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                 <button onclick="loadKcUsers()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
                     Aktualisieren
                 </button>
@@ -786,7 +773,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="font-semibold text-slate-800 text-sm">Aktive Sessions</h2>
-                    <button onclick="loadKcUsers()" class="text-xs text-indigo-600 hover:underline">Aktualisieren</button>
+                    <button onclick="loadKcUsers()" class="text-xs text-brand hover:underline">Aktualisieren</button>
                 </div>
                 <div id="kc-sessions-list" class="text-sm text-slate-500">Wähle einen Benutzer um Sessions anzuzeigen.</div>
             </div>
@@ -795,7 +782,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-4">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                     <h2 class="font-semibold text-slate-800 text-sm">Aktive Gast-Links</h2>
-                    <button onclick="loadGuestTokens()" class="text-xs text-indigo-600 hover:underline">Aktualisieren</button>
+                    <button onclick="loadGuestTokens()" class="text-xs text-brand hover:underline">Aktualisieren</button>
                 </div>
                 <div id="guest-token-list" class="divide-y divide-slate-50">
                     <div class="px-4 py-3 text-sm text-slate-400">Wird geladen…</div>
@@ -820,32 +807,32 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. KIT-0001) <span id="user-id-hint" class="text-amber-500 hidden">— via "ID umbenennen"</span></label>
-                    <input type="text" id="user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                    <input type="text" id="user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Workmate-ID <span class="text-slate-300">(z.B. WM-100)</span></label>
-                    <input type="text" id="user-workmate-id" placeholder="WM-100" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                    <input type="text" id="user-workmate-id" placeholder="WM-100" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Keycloak-ID (UUID)</label>
-                <input type="text" id="user-keycloak-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                <input type="text" id="user-keycloak-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Benutzername</label>
-                <input type="text" id="user-username" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                <input type="text" id="user-username" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Anzeigename</label>
-                <input type="text" id="user-display-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="user-display-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Telefonnummer (E.164)</label>
-                <input type="text" id="user-phone" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                <input type="text" id="user-phone" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Rolle</label>
-                <select id="user-role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                <select id="user-role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white">
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                 </select>
@@ -856,7 +843,7 @@
                 </button>
                 <div class="flex gap-2 ml-auto">
                     <button type="button" onclick="document.getElementById('user-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+                    <button type="submit" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
                 </div>
             </div>
         </form>
@@ -880,7 +867,7 @@
         </div>
         <div class="mb-5">
             <label class="block text-xs font-medium text-slate-500 mb-1">Neue ID</label>
-            <input type="text" id="rename-new-id" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <input type="text" id="rename-new-id" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
         </div>
         <div class="flex justify-end gap-2">
             <button onclick="document.getElementById('rename-id-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
@@ -898,9 +885,9 @@
             </button>
         </div>
         <div class="flex gap-2 mb-4">
-            <input type="text" id="chip-new-uid" placeholder="Chip-UID (z.B. 74AFF106)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <input type="text" id="chip-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <button onclick="addChip()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
+            <input type="text" id="chip-new-uid" placeholder="Chip-UID (z.B. 74AFF106)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
+            <input type="text" id="chip-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
+            <button onclick="addChip()" class="px-3 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
         </div>
         <div class="border border-slate-200 rounded-lg overflow-hidden">
             <table class="data-table chip-table">
@@ -920,9 +907,9 @@
             </button>
         </div>
         <div class="flex gap-2 mb-4">
-            <input type="text" id="yk-new-otp" placeholder="OTP oder Public-ID" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <input type="text" id="yk-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-            <button onclick="addYubikey()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
+            <input type="text" id="yk-new-otp" placeholder="OTP oder Public-ID" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
+            <input type="text" id="yk-new-label" placeholder="Label (optional)" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
+            <button onclick="addYubikey()" class="px-3 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">+ Hinzuf&uuml;gen</button>
         </div>
         <div class="border border-slate-200 rounded-lg overflow-hidden">
             <table class="data-table chip-table">
@@ -945,29 +932,29 @@
             <input type="hidden" id="room-edit-id">
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">ID (z.B. serverroom)</label>
-                <input type="text" id="room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
+                <input type="text" id="room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
-                <input type="text" id="room-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="room-name" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Beschreibung</label>
-                <input type="text" id="room-description" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="room-description" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Zigbee Lock-ID</label>
-                <input type="text" id="room-zigbee" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="room-zigbee" placeholder="Optional" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Gruppe</label>
-                <select id="room-group-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                <select id="room-group-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white">
                     <option value="">Keine Gruppe</option>
                 </select>
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('room-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+                <button type="submit" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
             </div>
         </form>
     </div>
@@ -985,16 +972,16 @@
             <input type="hidden" id="group-edit-id">
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Name</label>
-                <input type="text" id="group-name" required placeholder="z.B. Admin Räume" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="group-name" required placeholder="z.B. Admin Räume" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-2">Farbe</label>
                 <div id="color-swatches" class="flex flex-wrap gap-2"></div>
-                <input type="hidden" id="group-color" value="#6366f1">
+                <input type="hidden" id="group-color" value="#00b8d4">
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('group-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+                <button type="submit" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
             </div>
         </form>
     </div>
@@ -1011,15 +998,15 @@
         <form id="permission-form" onsubmit="savePermission(event)" class="space-y-3">
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Benutzer</label>
-                <select id="perm-user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"></select>
+                <select id="perm-user-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white"></select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Raum</label>
-                <select id="perm-room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"></select>
+                <select id="perm-room-id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white"></select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Zugriffslevel</label>
-                <select id="perm-access-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+                <select id="perm-access-level" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-white">
                     <option value="read">Lesen</option>
                     <option value="write">Schreiben</option>
                     <option value="admin">Admin</option>
@@ -1035,19 +1022,19 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Gültig ab</label>
-                        <input id="perm-valid-from" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="perm-valid-from" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Gültig bis</label>
-                        <input id="perm-valid-until" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="perm-valid-until" type="date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Von Uhrzeit</label>
-                        <input id="perm-time-from" type="time" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="perm-time-from" type="time" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Bis Uhrzeit</label>
-                        <input id="perm-time-until" type="time" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="perm-time-until" type="time" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                 </div>
                 <div class="mt-3">
@@ -1067,7 +1054,7 @@
 
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="document.getElementById('permission-dialog').close()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+                <button type="submit" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
             </div>
         </form>
     </div>
@@ -1097,24 +1084,24 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Vorname</label>
-                    <input id="kcu-firstname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <input id="kcu-firstname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Nachname</label>
-                    <input id="kcu-lastname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <input id="kcu-lastname" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Benutzername *</label>
-                <input id="kcu-username" type="text" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <input id="kcu-username" type="text" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">E-Mail *</label>
-                <input id="kcu-email" type="email" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <input id="kcu-email" type="email" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Temporäres Passwort *</label>
-                <input id="kcu-password" type="password" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <input id="kcu-password" type="password" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
             </div>
             <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                 <input id="kcu-temp" type="checkbox" checked class="rounded">
@@ -1129,11 +1116,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs text-slate-500 mb-1">Benutzer-ID *</label>
-                            <input id="kcu-db-id" type="text" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <input id="kcu-db-id" type="text" placeholder="z.B. KIT-0042" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-500 mb-1">Rolle</label>
-                            <select id="kcu-db-role" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <select id="kcu-db-role" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                                 <option value="user">Benutzer</option>
                                 <option value="admin">Admin</option>
                             </select>
@@ -1141,17 +1128,17 @@
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Anzeigename</label>
-                        <input id="kcu-db-display" type="text" placeholder="Vor- und Nachname" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="kcu-db-display" type="text" placeholder="Vor- und Nachname" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1">Telefon (E.164, optional)</label>
-                        <input id="kcu-db-phone" type="text" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <input id="kcu-db-phone" type="text" placeholder="+4915712345678" class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     </div>
                 </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 mt-4">
                 <button type="button" onclick="document.getElementById('kc-user-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Anlegen</button>
+                <button type="submit" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Anlegen</button>
             </div>
         </form>
     </div>
@@ -1165,7 +1152,7 @@
         <div class="space-y-3">
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Neues Passwort</label>
-                <input id="kc-pw-input" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <input id="kc-pw-input" type="password" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
             </div>
             <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                 <input id="kc-pw-temp" type="checkbox" checked class="rounded">
@@ -1174,7 +1161,7 @@
         </div>
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
             <button onclick="document.getElementById('kc-pw-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-            <button onclick="saveKcPassword()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
+            <button onclick="saveKcPassword()" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Speichern</button>
         </div>
     </div>
 </dialog>
@@ -1186,15 +1173,15 @@
         <div class="space-y-3">
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Raum *</label>
-                <select id="guest-room-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+                <select id="guest-room-id" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white"></select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Beschreibung (optional)</label>
-                <input id="guest-label" type="text" placeholder="z.B. Lieferant 18.05." class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <input id="guest-label" type="text" placeholder="z.B. Lieferant 18.05." class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Gültig für (Stunden)</label>
-                <select id="guest-hours" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                <select id="guest-hours" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                     <option value="1">1 Stunde</option>
                     <option value="4">4 Stunden</option>
                     <option value="8">8 Stunden</option>
@@ -1214,7 +1201,7 @@
         </div>
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
             <button onclick="document.getElementById('guest-token-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Schließen</button>
-            <button id="guest-generate-btn" onclick="generateGuestToken()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Generieren</button>
+            <button id="guest-generate-btn" onclick="generateGuestToken()" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Generieren</button>
         </div>
     </div>
 </dialog>
@@ -1239,11 +1226,11 @@
         <p id="kc-role-dialog-user" class="text-sm text-slate-500 mb-3"></p>
         <div>
             <label class="block text-xs font-medium text-slate-500 mb-1">Rolle</label>
-            <select id="kc-role-select" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+            <select id="kc-role-select" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white"></select>
         </div>
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-200 mt-4">
             <button onclick="document.getElementById('kc-role-dialog').close()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">Abbrechen</button>
-            <button onclick="saveKcRole()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">Zuweisen</button>
+            <button onclick="saveKcRole()" class="px-4 py-2 bg-brand hover:bg-brand-dim text-white rounded-lg text-sm font-medium transition-colors">Zuweisen</button>
         </div>
     </div>
 </dialog>
@@ -1502,7 +1489,7 @@ async function loadUsers() {
                 ? yks.map(y => `<span class="chip-tag">&#x1F511; ${esc(y.public_id)}${y.label ? ' · ' + esc(y.label) : ''}</span>`).join(' ')
                 : '<span class="text-slate-300">&mdash;</span>';
             const roleBadge = u.role === 'admin'
-                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">Admin</span>'
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-brand">Admin</span>'
                 : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">User</span>';
             const statusBadge = u.is_active
                 ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Aktiv</span>'
@@ -1517,7 +1504,7 @@ async function loadUsers() {
                 <td>${roleBadge}</td>
                 <td>${statusBadge}</td>
                 <td class="actions">
-                    <button class="btn-sm" style="background:#6366f1;color:#fff;" onclick="openUserDetail('${esc(u.id)}')">
+                    <button class="btn-sm" style="background:#00b8d4;color:#fff;" onclick="openUserDetail('${esc(u.id)}')">
                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         Details
                     </button>
@@ -1755,7 +1742,7 @@ function removeYubikey(ykId) {
 }
 
 // ==================== RÄUME + GRUPPEN ====================
-const GROUP_COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+const GROUP_COLORS = ['#00b8d4','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
 let _groupCache = [];
 
 async function loadRooms() {
@@ -1816,7 +1803,7 @@ function renderRoomGroup(group, rooms) {
 }
 
 // ---- Gruppen CRUD ----
-const GROUP_COLORS_LIST = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
+const GROUP_COLORS_LIST = ['#00b8d4','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b'];
 
 function renderColorSwatches(selected) {
     document.getElementById('color-swatches').innerHTML = GROUP_COLORS_LIST.map(c =>
@@ -1836,7 +1823,7 @@ function openGroupDialog() {
     document.getElementById('group-form').reset();
     document.getElementById('group-edit-id').value = '';
     document.getElementById('group-dialog-title').textContent = 'Neue Gruppe';
-    renderColorSwatches('#6366f1');
+    renderColorSwatches('#00b8d4');
     document.getElementById('group-dialog').showModal();
 }
 
@@ -1844,7 +1831,7 @@ function editGroup(group) {
     document.getElementById('group-dialog-title').textContent = 'Gruppe bearbeiten';
     document.getElementById('group-edit-id').value = group.id;
     document.getElementById('group-name').value = group.name;
-    renderColorSwatches(group.color || '#6366f1');
+    renderColorSwatches(group.color || '#00b8d4');
     document.getElementById('group-dialog').showModal();
 }
 
@@ -1995,7 +1982,7 @@ async function loadPermissions() {
                         <code class="text-xs text-slate-400">${esc(room.id)}</code>
                     </div>
                     <button onclick="openPermissionDialogForRoom('${esc(room.id)}')"
-                        class="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-semibold transition-colors">
+                        class="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-brand text-xs font-semibold transition-colors">
                         + Zugang
                     </button>
                 </div>
@@ -2183,7 +2170,7 @@ async function openUserDetail(userId) {
             ? `https://www.gravatar.com/avatar/${md5(user.email.trim().toLowerCase())}?s=64&d=identicon`
             : `https://www.gravatar.com/avatar/00000000000000000000000000000000?d=identicon&s=64`;
         const roleBadge = user.role === 'admin'
-            ? '<span style="background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">Admin</span>'
+            ? '<span style="background:#eef2ff;color:#00b8d4;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">Admin</span>'
             : '<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">User</span>';
         const statusBadge = user.is_active
             ? '<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">Aktiv</span>'
@@ -2209,8 +2196,8 @@ async function openUserDetail(userId) {
         const permsHtml = perms.length
             ? perms.map(p => {
                 const constraints = [
-                    p.weekdays ? `<span style="font-size:0.7rem;color:#6366f1;">⏱ ${p.weekdays}</span>` : '',
-                    (p.time_from && p.time_until) ? `<span style="font-size:0.7rem;color:#6366f1;">${p.time_from}–${p.time_until}</span>` : '',
+                    p.weekdays ? `<span style="font-size:0.7rem;color:#00b8d4;">⏱ ${p.weekdays}</span>` : '',
+                    (p.time_from && p.time_until) ? `<span style="font-size:0.7rem;color:#00b8d4;">${p.time_from}–${p.time_until}</span>` : '',
                     p.valid_until ? `<span style="font-size:0.7rem;color:#f59e0b;">bis ${p.valid_until}</span>` : '',
                 ].filter(Boolean).join(' ');
                 return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #f1f5f9;">
@@ -2218,7 +2205,7 @@ async function openUserDetail(userId) {
                         <span style="font-family:monospace;font-size:0.8125rem;color:#334155;">${esc(p.room_id)}</span>
                         ${constraints ? '<div style="margin-top:2px;">' + constraints + '</div>' : ''}
                     </div>
-                    <span style="background:#eef2ff;color:#4f46e5;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">${esc(p.access_level)}</span>
+                    <span style="background:#eef2ff;color:#00b8d4;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">${esc(p.access_level)}</span>
                   </div>`;
             }).join('')
             : '<p style="color:#94a3b8;font-size:0.875rem;padding:0.5rem 0;">Keine Berechtigungen</p>';
@@ -2248,7 +2235,7 @@ async function openUserDetail(userId) {
             </div>`;
 
         const info = [
-            user.workmate_id  ? `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.8125rem;color:#94a3b8;">Workmate-ID</span><span style="font-size:0.8125rem;font-family:monospace;background:#eef2ff;color:#4f46e5;padding:1px 6px;border-radius:4px;">${esc(user.workmate_id)}</span></div>` : '',
+            user.workmate_id  ? `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.8125rem;color:#94a3b8;">Workmate-ID</span><span style="font-size:0.8125rem;font-family:monospace;background:#eef2ff;color:#00b8d4;padding:1px 6px;border-radius:4px;">${esc(user.workmate_id)}</span></div>` : '',
             user.username     ? `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.8125rem;color:#94a3b8;">Username</span><span style="font-size:0.8125rem;color:#334155;">${esc(user.username)}</span></div>` : '',
             user.email        ? `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.8125rem;color:#94a3b8;">E-Mail</span><span style="font-size:0.8125rem;color:#334155;">${esc(user.email)}</span></div>` : '',
             user.phone_number ? `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.8125rem;color:#94a3b8;">Telefon</span><span style="font-size:0.8125rem;font-family:monospace;color:#334155;">${esc(user.phone_number)}</span></div>` : '',
