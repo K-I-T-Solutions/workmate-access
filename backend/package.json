@@ -1,0 +1,11 @@
+{
+  "name": "workmate-access-css",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./app/static/input.css -o ./app/static/output.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

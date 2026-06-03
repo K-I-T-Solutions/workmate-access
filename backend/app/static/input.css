@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Komponenten-Klassen die vom JS dynamisch gesetzt werden */
+@layer components {
+  .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
+  .chip-list { @apply flex flex-wrap gap-1; }
+  .empty-state { @apply text-center py-8 text-slate-400 text-sm; }
+  .status-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
+  .status-granted { @apply bg-emerald-100 text-emerald-800; }
+  .status-denied  { @apply bg-red-100 text-red-700; }
+  .verify-result  { @apply p-4 rounded-xl mt-3 text-sm leading-relaxed; }
+  .verify-granted { @apply bg-emerald-50 border border-emerald-200 text-emerald-900; }
+  .verify-denied  { @apply bg-red-50 border border-red-200 text-red-900; }
+}

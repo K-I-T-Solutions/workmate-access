@@ -4,35 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workmate Access</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/output.css">
     <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { DEFAULT: '#00b8d4', dim: '#0097b2', light: '#e0feff', glow: '#00e5ff' }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         [x-cloak] { display: none; }
         .sidebar-link { display:flex; align-items:center; gap:0.75rem; margin:0 0.5rem; padding:0.625rem 1rem; border-radius:0.75rem; color:rgba(255,255,255,0.85); font-size:0.875rem; font-weight:500; cursor:pointer; transition:all 0.15s ease; }
         .sidebar-link:hover { background:rgba(255,255,255,0.1); color:#fff; }
         .sidebar-link.active { background:#00b8d4; color:#fff; font-weight:600; box-shadow:0 4px 14px rgba(0,184,212,0.4); }
 
-        /* Klassen die vom JS dynamisch gesetzt werden */
-        .chip-tag { @apply inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-xs font-mono; }
-        .chip-list { @apply flex flex-wrap gap-1; }
-        .empty-state { @apply text-center py-8 text-slate-400 text-sm; }
-        .status-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold; }
-        .status-granted { @apply bg-emerald-100 text-emerald-800; }
-        .status-denied  { @apply bg-red-100 text-red-700; }
-        .verify-result  { @apply p-4 rounded-xl mt-3 text-sm leading-relaxed; }
-        .verify-granted { @apply bg-emerald-50 border border-emerald-200 text-emerald-900; }
-        .verify-denied  { @apply bg-red-50 border border-red-200 text-red-900; }
+        /* Komponenten-Klassen werden via output.css bereitgestellt */
 
         /* Aktions-Buttons vom JS */
         .btn-sm { display:inline-flex; align-items:center; gap:0.375rem; padding:0.375rem 0.75rem; border-radius:0.5rem; font-size:0.75rem; font-weight:600; transition:all 0.15s ease; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.15); cursor:pointer; border:none; }
@@ -248,8 +228,8 @@
 <div id="landing" style="display:none" class="landing-page">
     <nav class="landing-nav">
         <div class="flex items-center gap-3">
-            <img src="/static/logo-wm-access.png" class="w-9 h-9 object-contain" alt="">
-            <img src="/static/sign-access.png" class="h-6 object-contain" alt="Workmate Access">
+            <!--<img src="/static/logo-wm-access.png" class="w-10 h-max object-contain" alt="">-->
+            <img src="/static/sign-access.png" class="h-max object-contain" style="max-width:240px" alt="Workmate Access">
         </div>
         <button onclick="keycloak.login()" class="landing-btn-outline">Anmelden &rarr;</button>
     </nav>
@@ -307,8 +287,8 @@
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="fixed inset-0 bg-slate-900 flex flex-col items-center justify-center z-50">
     <div class="flex flex-col items-center gap-4 mb-6">
-        <img src="/static/logo-wm-access.png" class="w-16 h-16 object-contain" alt="">
-        <img src="/static/sign-access.png" class="h-7 object-contain" alt="Workmate Access">
+        <img src="/static/logo-wm-access.png" class="w-20 h-20 object-contain" alt="">
+        <img src="/static/sign-access.png" class="h-12 object-contain" style="max-width:320px" alt="Workmate Access">
     </div>
     <svg class="spinner w-6 h-6 text-cyan-300 mb-3" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -341,8 +321,8 @@
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <div class="flex items-center gap-2">
-            <img src="/static/logo-wm-access.png" class="w-6 h-6 object-contain" alt="">
-            <img src="/static/sign-access.png" class="h-4 object-contain" alt="Workmate Access">
+            <img src="/static/logo-wm-access.png" class="w-7 h-7 object-contain" alt="">
+            <img src="/static/sign-access.png" class="h-6 object-contain" style="max-width:180px" alt="Workmate Access">
         </div>
         <div class="flex items-center gap-2">
             <button id="theme-toggle-mobile" onclick="toggleDark()" class="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors">
@@ -362,9 +342,9 @@
     <aside id="sidebar" class="w-60 bg-slate-900 flex flex-col flex-shrink-0">
         <div class="px-4 py-5 border-b border-slate-700">
             <div class="flex items-center gap-3">
-                <img src="/static/logo-wm-access.png" class="w-9 h-9 object-contain flex-shrink-0" alt="">
+                <img src="/static/logo-wm-access.png" class="w-10 h-10 object-contain flex-shrink-0" alt="">
                 <div>
-                    <img src="/static/sign-access.png" class="h-5 object-contain" alt="Workmate Access">
+                    <img src="/static/sign-access.png" class="h-7 object-contain" style="max-width:160px" alt="Workmate Access">
                     <div class="text-slate-400 text-xs mt-0.5">Admin Panel</div>
                 </div>
             </div>
